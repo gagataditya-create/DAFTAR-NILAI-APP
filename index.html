@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Penilaian</title>
+
+    <!-- SETUP LOGO & PWA -->
+    <link rel="icon" type="image/png" href="./logo.png">
+    <link rel="apple-touch-icon" href="./logo.png">
+    <meta name="theme-color" content="#020617">
+    
+    <!-- 1. TAILWIND CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. KONFIGURASI IMPORT -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.294.0"
+        }
+    }
+    </script>
+
+    <!-- 3. BABEL -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
+
+    <!-- STYLE TAMBAHAN -->
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
+        body { background-color: #020617; }
+    </style>
+</head>
+<body class="custom-scrollbar">
+    <div id="root"></div>
+
+    <!-- 4. KODE UTAMA APLIKASI -->
+    <script type="text/babel" data-type="module" data-presets="react">
+        import React, { useState, useEffect, useMemo, useRef } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+            Users, BookOpen, PenTool, LayoutGrid, Settings, Trash2, Plus, 
+            ChevronRight, TrendingUp, Upload, Check, X, Clipboard, 
+            FileSpreadsheet, Printer, Percent, AlertCircle, Save as SaveIcon, Download, Sliders, Layers, Palette, Key, ShieldAlert, Lock, Pencil, LogOut, BookA
+        } from 'lucide-react';
+
+        // --- SISTEM CUSTOM DIALOG (PENGGANTI ALERT & CONFIRM) ---
+        let globalDialogCallback = null;
+        
+        function CustomDialog({ isOpen, config, onClose }) {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#0b1126] border border-white/10 p-6 rounded-2xl shadow-2xl max-w-md w-full relative transform transition-all scale-100 animate-in zoom-in-95">
+                        <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full mb-4 ${config.type === 'confirm' ? 'bg-orange-500/20 text-orange-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                            {config.type === 'confirm' ? <AlertCircle size={24} /> : <AlertCircle size={24} />}
+                        </div>
+                        <h3 className="text-xl font-bold text-center text-white mb-2">{config.title || 'Pemberitahuan'}</h3>
+                        <p className="text-center text-slate-400 mb-6 text-sm">{config.message}</p>
+                        
+                        <div className="flex gap-3 justify-center">
+                            {config.type === 'confirm' && (
+                                <button onClick={() => onClose(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">
+                                    Batal
+                                </button>
+                            )}
+                            <button onClick={() => onClose(true)} className={`px-5 py-2.5 rounded-xl font-bold text-white transition-colors ${config.type === 'confirm' ? 'bg-orange-600 hover:bg-orange-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>
+                                {config.type === 'confirm' ? 'Ya, Lanjutkan' : 'Mengerti'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- KONFIGURASI MULTI-GURU (DENGAN ROLE ADMIN) ---
+        const teacherProfiles = {
+            'gagat': {
+                id: 'gagat',
+                name: 'Gagat Aditya Kurniaji, S.Pd',
+                subject: 'Seni Budaya',
+                password: 'monalisa',
+                isAdmin: true,
+                icon: <Palette size={24} />,
+                themeFrom: 'from-indigo-600',
+                themeTo: 'to-purple-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'isep': {
+                id: 'isep',
+                name: 'Indra Setyo Pambudi, S.Pd',
+                subject: 'Matematika',
+                password: 'isep',
+                isAdmin: false,
+                icon: <Percent size={24} />,
+                themeFrom: 'from-blue-600',
+                themeTo: 'to-cyan-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'nyun': {
+                id: 'nyun',
+                name: 'Yuyun Puji Rahayu, S.S',
+                subject: 'Bahasa Inggris',
+                password: 'nyun',
+                isAdmin: false,
+                icon: <BookA size={24} />,
+                themeFrom: 'from-emerald-600',
+                themeTo: 'to-teal-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            }
+        };
+
+        // --- ADAPTOR GOOGLE SHEETS ---
+        const db = {}; 
+        let LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
+        let dataListeners = [];
+        let activeApiKey = "";
+
+        const notifyListeners = () => dataListeners.forEach(fn => fn(LOCAL_DATA));
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+
+        const initDb = async (apiUrl) => {
+            if(!apiUrl || !apiUrl.startsWith('http')) return false;
+            activeApiKey = apiUrl;
+            try {
+                const res = await fetch(apiUrl);
+                const json = await res.json();
+                if(json) {
+                    LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {}, ...json };
+                    notifyListeners();
+                    return true;
+                }
+            } catch(e) { console.error("Error fetching", e); return false; }
+            return false;
+        }
+
+        const collection = (db, name) => name;
+        const doc = (db, col, id) => ({ col, id });
+        const query = (col, ...args) => col;
+        const orderBy = (field) => field;
+
+        const onSnapshot = (col, callback) => {
+            const listener = (state) => {
+                if(col === 'grades') {
+                    const docs = Object.entries(state.grades).map(([id, score]) => {
+                        const [studentId, assessmentId] = id.split('_');
+                        return { data: () => ({ studentId, assessmentId, score }) };
+                    });
+                    callback({ docs });
+                } else {
+                    const docs = (state[col] || []).map(item => ({ id: item.id, data: () => item }));
+                    callback({ docs });
+                }
+            };
+            dataListeners.push(listener);
+            listener(LOCAL_DATA); 
+            return () => { dataListeners = dataListeners.filter(l => l !== listener) };
+        }
+
+        const apiPost = async (payload) => {
+           if(!activeApiKey || !activeApiKey.startsWith('http')) return;
+           try {
+               await fetch(activeApiKey, { 
+                   method: 'POST', 
+                   mode: 'no-cors',
+                   headers: { 'Content-Type': 'text/plain' },
+                   body: JSON.stringify(payload) 
+               });
+           } catch(e) { console.error("Gagal sinkronisasi:", e); }
+        }
+
+        const addDoc = async (col, data) => {
+            const id = generateId();
+            const newItem = { id, ...data };
+            LOCAL_DATA[col] = [...(LOCAL_DATA[col]||[]), newItem];
+            notifyListeners();
+            await apiPost({ action: 'create', table: col, data: newItem });
+            return { id };
+        }
+
+        const updateDoc = async (docRef, data) => {
+            const col = docRef.col;
+            LOCAL_DATA[col] = LOCAL_DATA[col].map(item => item.id === docRef.id ? { ...item, ...data } : item);
+            notifyListeners();
+            await apiPost({ action: 'update', table: col, data: { id: docRef.id, ...data } });
+        }
+
+        const deleteDoc = async (docRef) => {
+            if(docRef.col === 'grades') {
+                const id = docRef.id;
+                delete LOCAL_DATA.grades[id];
+                const [studentId, assessmentId] = id.split('_');
+                await apiPost({ action: 'deleteGrade', table: 'grades', data: { studentId, assessmentId } });
+            } else {
+                LOCAL_DATA[docRef.col] = LOCAL_DATA[docRef.col].filter(item => item.id !== docRef.id);
+                await apiPost({ action: 'delete', table: docRef.col, data: { id: docRef.id } });
+            }
+            notifyListeners();
+        }
+
+        const setDoc = async (docRef, data, options) => {
+             if(docRef.col === 'grades') {
+                 const id = docRef.id;
+                 LOCAL_DATA.grades[id] = data.score;
+                 notifyListeners();
+                 await apiPost({ action: 'setGrade', table: 'grades', data: { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt } });
+             }
+        }
+
+        // --- MAIN COMPONENT ---
+        function ArtGradesApp() {
+            const [authUser, setAuthUser] = useState(null);
+            
+            // Login States
+            const [selectedTeacherId, setSelectedTeacherId] = useState('gagat');
+            const [passInput, setPassInput] = useState('');
+            
+            const [loginError, setLoginError] = useState(false);
+            const [isCheckingLogin, setIsCheckingLogin] = useState(false);
+
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [data, setData] = useState({ classes: [], students: [], assessments: [], grades: {} });
+            
+            const [dialogState, setDialogState] = useState({ isOpen: false, config: {} });
+
+            const showMessage = (message, title = 'Pemberitahuan') => {
+                setDialogState({ isOpen: true, config: { type: 'alert', title, message } });
+            };
+
+            const showConfirm = (message, onConfirm, title = 'Konfirmasi') => {
+                globalDialogCallback = onConfirm;
+                setDialogState({ isOpen: true, config: { type: 'confirm', title, message } });
+            };
+
+            const handleDialogClose = (result) => {
+                setDialogState({ isOpen: false, config: {} });
+                if (result && globalDialogCallback) {
+                    globalDialogCallback();
+                }
+                globalDialogCallback = null;
+            };
+
+            useEffect(() => {
+                const savedSessionId = localStorage.getItem('seru_active_session_id');
+                if (savedSessionId && teacherProfiles[savedSessionId]) {
+                    // Bypass password check if session exists
+                    const profile = teacherProfiles[savedSessionId];
+                    handleLoginProcess(profile, profile.password); 
+                }
+            }, []);
+
+            useEffect(() => {
+                if (!authUser) return;
+                
+                const unsubscribes = [
+                    onSnapshot(query(collection(db, 'classes'), orderBy('name')), s => 
+                        setData(p => ({ ...p, classes: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
+                    onSnapshot(query(collection(db, 'students'), orderBy('name')), s => 
+                        setData(p => ({ ...p, students: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
+                    onSnapshot(query(collection(db, 'assessments'), orderBy('createdAt')), s => 
+                        setData(p => ({ ...p, assessments: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
+                    onSnapshot(query(collection(db, 'grades')), s => {
+                        const map = {};
+                        s.docs.forEach(d => { const dt = d.data(); map[`${dt.studentId}_${dt.assessmentId}`] = dt.score; });
+                        setData(p => ({ ...p, grades: map }));
+                    })
+                ];
+                return () => unsubscribes.forEach(u => u());
+            }, [authUser]);
+
+            const handleLoginProcess = async (profile, password) => {
+                if (profile && password === profile.password) {
+                    setIsCheckingLogin(true);
+                    setLoginError(false);
+                    
+                    const customApi = localStorage.getItem(`seru_api_${profile.id}`);
+                    const apiUrl = customApi || profile.defaultApiUrl;
+                    
+                    const success = await initDb(apiUrl);
+                    
+                    if (success) {
+                        localStorage.setItem('seru_active_session_id', profile.id);
+                        setAuthUser(profile);
+                        setActiveTab('dashboard');
+                    } else {
+                        showMessage("Gagal terhubung ke Database Google Sheets. Silakan periksa URL di Pengaturan nanti.");
+                        localStorage.setItem('seru_active_session_id', profile.id);
+                        setAuthUser(profile);
+                        setActiveTab(profile.isAdmin ? 'settings' : 'dashboard');
+                    }
+                    setIsCheckingLogin(false);
+                } else {
+                    setLoginError(true);
+                    setPassInput('');
+                }
+            };
+
+            const handleLoginSubmit = (e) => {
+                e.preventDefault();
+                const profile = teacherProfiles[selectedTeacherId];
+                handleLoginProcess(profile, passInput.toLowerCase());
+            };
+
+            const handleLogout = () => {
+                showConfirm("Anda yakin ingin keluar dari sistem?", () => {
+                    localStorage.removeItem('seru_active_session_id');
+                    setAuthUser(null);
+                    setPassInput('');
+                    LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
+                    activeApiKey = "";
+                });
+            };
+
+            if (!authUser) {
+                return (
+                    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] font-sans">
+                        <CustomDialog isOpen={dialogState.isOpen} config={dialogState.config} onClose={handleDialogClose} />
+                        <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-300">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
+
+                            <div className="text-center mb-8 relative z-10">
+                                <div className="mb-4 flex justify-center">
+                                    <img src="./logo.png" alt="Logo Aplikasi" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.5)] transform hover:scale-110 transition-all duration-500" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x150/4f46e5/ffffff?text=SP'; }} />
+                                </div>
+                                <h1 className="text-2xl font-black text-white tracking-tight">SISTEM PENILAIAN</h1>
+                                <p className="text-slate-400 text-sm mt-1">Portal Guru SMPN 2 Ayah</p>
+                            </div>
+
+                            <form onSubmit={handleLoginSubmit} className="space-y-4 relative z-10">
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Pilih Akun Guru</label>
+                                    <div className="relative group">
+                                        <Users className="absolute left-4 top-3.5 text-slate-500 group-focus-within:text-indigo-400 transition-colors z-10" size={18} />
+                                        <select 
+                                            value={selectedTeacherId}
+                                            onChange={(e) => setSelectedTeacherId(e.target.value)}
+                                            className="w-full bg-slate-950 border border-white/10 pl-12 pr-4 py-3 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer"
+                                            disabled={isCheckingLogin}
+                                        >
+                                            {Object.values(teacherProfiles).map(p => (
+                                                <option key={p.id} value={p.id}>{p.name} - {p.subject}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Password</label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-3.5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={18} />
+                                        <input 
+                                            type="password" 
+                                            value={passInput}
+                                            onChange={(e) => setPassInput(e.target.value)}
+                                            className="w-full bg-slate-950 border border-white/10 pl-12 pr-4 py-3 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700"
+                                            placeholder="Masukkan password..."
+                                            autoFocus
+                                            disabled={isCheckingLogin}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {loginError && (
+                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-400 font-bold animate-pulse">
+                                        <AlertCircle size={16}/> Password Salah!
+                                    </div>
+                                )}
+
+                                <button disabled={isCheckingLogin} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 border border-white/10 disabled:opacity-50 mt-2">
+                                    {isCheckingLogin ? 'MEMERIKSA...' : 'MASUK SISTEM'} <ChevronRight size={18} />
+                                </button>
+                            </form>
+                            
+                            <div className="mt-8 text-center border-t border-white/5 pt-4">
+                                <p className="text-[10px] text-slate-600 font-mono tracking-widest">VERSI MULTI-DATABASE // V2.2</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const activeClasses = data.classes.filter(c => c.isActive !== false);
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex flex-col bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+                    <CustomDialog isOpen={dialogState.isOpen} config={dialogState.config} onClose={handleDialogClose} />
+                    
+                    <header className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40 px-6 py-4 shadow-2xl">
+                        <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="flex items-center gap-4 group cursor-default">
+                                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 p-1.5 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                                    <img src="./logo.png" alt="Logo Aplikasi" className="w-full h-full object-contain drop-shadow-md" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x150/4f46e5/ffffff?text=SP'; }} />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-indigo-400 tracking-tight flex items-center gap-2">
+                                        SISTEM PENILAIAN
+                                    </h1>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        <p className="text-emerald-400 text-xs font-bold">{authUser.name}</p>
+                                        <span className="text-slate-600 text-xs">•</span>
+                                        <p className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-medium">{authUser.subject}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <nav className="flex items-center gap-1 p-1 bg-slate-800/50 rounded-2xl border border-white/5 overflow-x-auto scrollbar-hide backdrop-blur-md relative z-50">
+                                <NavBtn id="dashboard" icon={<LayoutGrid size={18} />} active={activeTab} set={setActiveTab}>Beranda</NavBtn>
+                                <NavBtn id="classes" icon={<Users size={18} />} active={activeTab} set={setActiveTab}>Kelas</NavBtn>
+                                <NavBtn id="assessments" icon={<BookOpen size={18} />} active={activeTab} set={setActiveTab}>Materi</NavBtn>
+                                <NavBtn id="input" icon={<PenTool size={18} />} active={activeTab} set={setActiveTab}>Input</NavBtn>
+                                <NavBtn id="recap" icon={<Layers size={18} />} active={activeTab} set={setActiveTab}>Rekap</NavBtn>
+                                <div className="w-px h-8 bg-white/10 mx-2 hidden md:block"></div>
+                                <NavBtn id="settings" icon={authUser.isAdmin ? <Settings size={18} /> : <Lock size={18}/>} active={activeTab} set={setActiveTab}>Setting</NavBtn>
+                                <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-red-400 hover:bg-red-500/10 hover:text-red-300 ml-1">
+                                    <LogOut size={18} />
+                                </button>
+                            </nav>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-auto p-4 md:p-8 max-w-[1800px] mx-auto w-full relative custom-scrollbar">
+                        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
+                        <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
+
+                        {activeTab === 'dashboard' && <DashboardView data={data} authUser={authUser} showMessage={showMessage} />}
+                        {activeTab === 'classes' && <ClassesView data={data} activeClasses={activeClasses} showConfirm={showConfirm} authUser={authUser} />}
+                        {activeTab === 'assessments' && <AssessmentsView data={data} authUser={authUser} showConfirm={showConfirm} />}
+                        {activeTab === 'input' && <InputMatrixView data={data} authUser={authUser} activeClasses={activeClasses} showMessage={showMessage} />}
+                        {activeTab === 'recap' && <RecapView data={data} authUser={authUser} activeClasses={activeClasses} showMessage={showMessage} />}
+                        {activeTab === 'settings' && <SettingsView authUser={authUser} data={data} showMessage={showMessage} showConfirm={showConfirm} />}
+                    </main>
+                </div>
+            );
+        }
+
+        const NavBtn = ({ id, icon, children, active, set }) => (
+            <button onClick={() => set(id)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap relative overflow-hidden z-10 ${active === id ? 'text-white shadow-lg bg-white/10 border border-white/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                {active === id && <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-100 -z-10"></div>}
+                <span className="relative z-10 pointer-events-none">{icon}</span>
+                <span className="relative z-10 pointer-events-none">{children}</span>
+            </button>
+        );
+
+        // --- DASHBOARD VIEW ---
+        function DashboardView({ data, authUser, showMessage }) {
+            const [pendingChanges, setPendingChanges] = useState({});
+            const [isSaving, setIsSaving] = useState(false);
+            
+            // FILTER: Hanya hitung materi & nilai milik guru yang sedang login
+            const myAssessments = useMemo(() => {
+                return data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
+            }, [data.assessments, authUser.id]);
+
+            const myGradesCount = useMemo(() => {
+                return Object.keys(data.grades).filter(key => {
+                    const assId = key.split('_')[1];
+                    return myAssessments.some(a => a.id === assId);
+                }).length;
+            }, [data.grades, myAssessments]);
+
+            const standardClasses = [['9A','9B','9C','9D','9E'], ['8A','8B','8C','8D','8E'], ['7A','7B','7C','7D','7E']];
+            
+            const toggleClassManual = (name) => {
+                const dbClass = data.classes.find(c => c.name === name);
+                const dbStatus = dbClass ? (dbClass.isActive !== false) : false;
+                const currentStatus = pendingChanges[name] !== undefined ? pendingChanges[name] : dbStatus;
+                const newStatus = !currentStatus;
+
+                if (newStatus === dbStatus) {
+                    const next = { ...pendingChanges };
+                    delete next[name];
+                    setPendingChanges(next);
+                } else {
+                    setPendingChanges({ ...pendingChanges, [name]: newStatus });
+                }
+            };
+
+            const saveClassesToDb = async () => {
+                setIsSaving(true);
+                try {
+                    const promises = Object.entries(pendingChanges).map(async ([name, isActive]) => {
+                        const target = data.classes.find(c => c.name === name);
+                        if (target) return updateDoc(doc(db, 'classes', target.id), { isActive });
+                        else return addDoc(collection(db, 'classes'), { name, isActive, createdAt: Date.now() });
+                    });
+                    await Promise.all(promises);
+                    setPendingChanges({});
+                    showMessage("Konfigurasi kelas berhasil disimpan!", "Sukses");
+                } catch (e) { showMessage("Gagal menyimpan: " + e.message, "Error"); }
+                setIsSaving(false);
+            };
+
+            const hasChanges = Object.keys(pendingChanges).length > 0;
+
+            return (
+                <div className="space-y-8 animate-in fade-in">
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-white/5 pb-6">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white tracking-tight">Dashboard Guru</h2>
+                            <p className="text-slate-400 mt-1">Overview Statistik & Manajemen Kelas ({authUser.subject})</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        {[
+                        { l: 'Total Siswa', v: data.students.length, i: <Users />, color: 'from-blue-500 to-cyan-500' },
+                        { l: 'Kelas Aktif', v: data.classes.filter(c => c.isActive !== false).length, i: <LayoutGrid />, color: 'from-violet-500 to-purple-500' },
+                        { l: 'Materi Ajar', v: myAssessments.length, i: <BookOpen />, color: 'from-orange-500 to-amber-500' },
+                        { l: 'Data Masuk', v: myGradesCount, i: <TrendingUp />, color: 'from-emerald-500 to-green-500' }
+                        ].map((s, i) => (
+                        <div key={i} className="relative group p-6 rounded-2xl bg-slate-900/50 border border-white/5 backdrop-blur-sm overflow-hidden transition-all hover:border-white/20 hover:bg-slate-800/50">
+                            <div className={`absolute top-0 right-0 p-32 opacity-10 bg-gradient-to-br ${s.color} blur-3xl -mr-16 -mt-16 group-hover:opacity-20 transition-opacity`}></div>
+                            <div className="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{s.l}</p>
+                                    <p className="text-4xl font-black text-white">{s.v}</p>
+                                </div>
+                                <div className={`p-3 rounded-xl bg-gradient-to-br ${s.color} text-white shadow-lg`}>{s.i}</div>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-8 backdrop-blur-md relative">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex gap-3 items-center">
+                                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Check size={24}/></div>
+                                <div>
+                                    <h3 className="font-bold text-white text-lg">Panel Kontrol Kelas (Sekolah)</h3>
+                                    <p className="text-xs text-slate-400">Status kelas ini dibagikan ke semua guru. Klik untuk On/Off.</p>
+                                </div>
+                            </div>
+                            {hasChanges && (
+                                <button onClick={saveClassesToDb} disabled={isSaving} className="animate-bounce bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(99,102,241,0.5)] hover:shadow-[0_0_30px_rgba(99,102,241,0.8)] transition-all flex items-center gap-2 border border-white/20">
+                                    <SaveIcon size={18} /> {isSaving ? 'Menyimpan...' : 'SIMPAN PERUBAHAN'}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                        {standardClasses.map((row, i) => (
+                            <div key={i} className="grid grid-cols-5 gap-3 md:gap-4">
+                            {row.map(nm => {
+                                const dbClass = data.classes.find(c => c.name === nm);
+                                const dbStatus = dbClass ? (dbClass.isActive !== false) : false;
+                                const isActive = pendingChanges[nm] !== undefined ? pendingChanges[nm] : dbStatus;
+                                const isDirty = pendingChanges[nm] !== undefined;
+                                return (
+                                <button key={nm} onClick={() => toggleClassManual(nm)} 
+                                    className={`
+                                        h-16 rounded-xl font-black text-xl transition-all relative border overflow-hidden group z-10
+                                        ${isActive 
+                                            ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-100 shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:bg-indigo-600 hover:border-indigo-400' 
+                                            : 'bg-slate-900/50 border-white/5 text-slate-600 hover:border-white/20 hover:text-slate-400'}
+                                        ${isDirty ? 'ring-2 ring-yellow-500/50 ring-offset-2 ring-offset-slate-900' : ''}
+                                    `}
+                                >
+                                    <span className="relative z-10 pointer-events-none">{nm}</span>
+                                    {isActive && <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>}
+                                    {isDirty && <div className="absolute top-2 right-2 w-2 h-2 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.8)] animate-pulse"></div>}
+                                </button>
+                                )
+                            })}
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- CLASSES VIEW ---
+        function ClassesView({ data, activeClasses, showConfirm, authUser }) {
+            const [selectedClassId, setSelectedClassId] = useState(activeClasses[0]?.id || '');
+            const [newStudentName, setNewStudentName] = useState('');
+
+            const classStudents = data.students.filter(s => s.classId === selectedClassId);
+
+            const handleAddStudent = async (e) => {
+                e.preventDefault();
+                if(!newStudentName.trim() || !selectedClassId) return;
+                await addDoc(collection(db, 'students'), { name: newStudentName.trim(), classId: selectedClassId, createdAt: Date.now() });
+                setNewStudentName('');
+            };
+
+            const handleDeleteStudent = (id) => {
+                showConfirm('Yakin ingin menghapus siswa ini?', async () => {
+                    await deleteDoc(doc(db, 'students', id));
+                });
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-6">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white tracking-tight">Manajemen Kelas</h2>
+                            <p className="text-slate-400 mt-1">Daftar siswa ini dibagikan ke semua guru secara sinkron.</p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                        {activeClasses.map(c => (
+                            <button key={c.id} onClick={() => setSelectedClassId(c.id)}
+                                className={`px-6 py-3 rounded-xl font-bold border transition-all flex-shrink-0 z-10 relative ${selectedClassId === c.id ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-slate-800'}`}>
+                                <span className="pointer-events-none">{c.name}</span>
+                            </button>
+                        ))}
+                        {activeClasses.length === 0 && <p className="text-slate-500">Belum ada kelas aktif. Silakan aktifkan di Dashboard.</p>}
+                    </div>
+
+                    {selectedClassId && (
+                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
+                            {authUser?.isAdmin ? (
+                                <form onSubmit={handleAddStudent} className="flex gap-3 mb-6 animate-in fade-in">
+                                    <input type="text" value={newStudentName} onChange={e => setNewStudentName(e.target.value)} placeholder="Nama Siswa Baru..." className="flex-1 bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white outline-none focus:border-indigo-500" />
+                                    <button type="submit" className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 flex items-center gap-2"><Plus size={18}/> Tambah</button>
+                                </form>
+                            ) : (
+                                <div className="p-4 bg-slate-950/40 border border-white/5 rounded-xl text-xs text-slate-400 mb-6 flex items-center gap-2">
+                                    <Lock size={14} className="text-indigo-400" />
+                                    <span>Menu tambah atau hapus siswa dinonaktifkan. Manajemen siswa dikunci oleh Admin Sekolah (Bpk. Gagat).</span>
+                                </div>
+                            )}
+
+                            <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                                {classStudents.map((s, idx) => (
+                                    <div key={s.id} className="flex justify-between items-center bg-slate-950/50 border border-white/5 p-4 rounded-xl hover:bg-slate-900 transition-colors">
+                                        <div className="flex gap-4 items-center">
+                                            <span className="text-slate-500 font-mono w-6 text-right">{idx + 1}.</span>
+                                            <span className="text-slate-200 font-medium">{s.name}</span>
+                                        </div>
+                                        {authUser?.isAdmin && (
+                                            <button onClick={() => handleDeleteStudent(s.id)} className="text-red-400/50 hover:text-red-400 p-2"><Trash2 size={18}/></button>
+                                        )}
+                                    </div>
+                                ))}
+                                {classStudents.length === 0 && <p className="text-slate-500 text-center py-8">Belum ada siswa di kelas ini.</p>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- ASSESSMENTS VIEW ---
+        function AssessmentsView({ data, authUser, showConfirm }) {
+            const [title, setTitle] = useState('');
+            const [desc, setDesc] = useState('');
+            const [weight, setWeight] = useState(1); 
+
+            const [editingId, setEditingId] = useState(null);
+            const [editForm, setEditForm] = useState({ title: '', desc: '', weight: 1 });
+
+            // FILTER: Hanya tampilkan materi milik guru yang sedang login
+            const myAssessments = useMemo(() => {
+                return data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
+            }, [data.assessments, authUser.id]);
+
+            const handleAdd = async (e) => {
+                e.preventDefault();
+                if(!title.trim()) return;
+                await addDoc(collection(db, 'assessments'), { 
+                    title: title.trim(), 
+                    description: desc.trim(), 
+                    weight: Number(weight), 
+                    teacherId: authUser.id, // LABEL IDENTITAS GURU
+                    createdAt: Date.now() 
+                });
+                setTitle(''); setDesc(''); setWeight(1);
+            };
+
+            const startEdit = (a) => {
+                setEditingId(a.id);
+                setEditForm({ title: a.title, desc: a.description || '', weight: a.weight || 1 });
+            };
+
+            const cancelEdit = () => {
+                setEditingId(null);
+            };
+
+            const saveEdit = async () => {
+                if(!editForm.title.trim()) return;
+                await updateDoc(doc(db, 'assessments', editingId), {
+                    title: editForm.title.trim(),
+                    description: editForm.desc.trim(),
+                    weight: Number(editForm.weight)
+                });
+                setEditingId(null);
+            };
+
+            const handleDelete = (id) => {
+                showConfirm('Hapus materi ujian ini? Data nilai terkait tidak akan ikut terhapus tapi mungkin menyebabkan error rekap.', async () => {
+                    await deleteDoc(doc(db, 'assessments', id));
+                });
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-6">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white tracking-tight">Materi Ujian & Penilaian</h2>
+                            <p className="text-slate-400 mt-1">Materi ini bersifat privat dan hanya muncul di akun Anda ({authUser.subject}).</p>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="md:col-span-1">
+                            <form onSubmit={handleAdd} className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 flex flex-col gap-4 sticky top-24">
+                                <h3 className="font-bold text-white border-b border-white/10 pb-3 mb-2 flex items-center gap-2"><Plus size={18}/> Buat Materi Baru</h3>
+                                <div>
+                                    <label className="text-xs text-slate-400 font-bold mb-2 block">Judul Materi</label>
+                                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Menggambar Flora" className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white outline-none focus:border-indigo-500" required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="col-span-2">
+                                        <label className="text-xs text-slate-400 font-bold mb-2 flex justify-between">
+                                            Bobot Nilai
+                                            <span className="text-indigo-400 font-mono">x{weight}</span>
+                                        </label>
+                                        <input type="number" min="1" max="100" value={weight} onChange={e => setWeight(e.target.value)} placeholder="1" className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white outline-none focus:border-indigo-500 font-mono text-center" required />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 font-bold mb-2 block">Keterangan (Opsional)</label>
+                                    <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Detail tugas..." className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white outline-none focus:border-indigo-500 resize-none h-24 custom-scrollbar"></textarea>
+                                </div>
+                                <button type="submit" className="bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-500 shadow-lg shadow-indigo-500/25 mt-2">Tambah Materi</button>
+                            </form>
+                        </div>
+                        <div className="md:col-span-2 space-y-3">
+                            {myAssessments.map((a, idx) => (
+                                <div key={a.id} className="bg-slate-900/40 border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-all group">
+                                    {editingId === a.id ? (
+                                        <div className="space-y-4">
+                                            <div className="flex gap-3">
+                                                <input type="text" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} className="flex-1 bg-slate-950 border border-white/10 px-4 py-2 rounded-lg text-white outline-none focus:border-indigo-500" placeholder="Judul..." />
+                                                <input type="number" min="1" value={editForm.weight} onChange={e => setEditForm({...editForm, weight: e.target.value})} className="w-20 bg-slate-950 border border-white/10 px-4 py-2 rounded-lg text-white outline-none focus:border-indigo-500 text-center font-mono" title="Bobot" />
+                                            </div>
+                                            <textarea value={editForm.desc} onChange={e => setEditForm({...editForm, desc: e.target.value})} className="w-full bg-slate-950 border border-white/10 px-4 py-2 rounded-lg text-white outline-none focus:border-indigo-500 resize-none h-16 custom-scrollbar" placeholder="Keterangan..."></textarea>
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={cancelEdit} className="px-4 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 rounded-lg">Batal</button>
+                                                <button onClick={saveEdit} className="px-4 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold flex items-center gap-1"><Check size={16}/> Simpan</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex gap-4">
+                                                <div className="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold relative">
+                                                    {idx + 1}
+                                                    <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-slate-900">x{a.weight || 1}</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                                                        {a.title} 
+                                                        <span className="text-xs font-normal px-2 py-0.5 bg-slate-800 rounded-md text-slate-400 border border-white/5 hidden md:inline-block">Bobot: {a.weight || 1}</span>
+                                                    </h4>
+                                                    <p className="text-sm text-slate-400 mt-1">{a.description || 'Tidak ada deskripsi'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => startEdit(a)} className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"><Pencil size={18}/></button>
+                                                <button onClick={() => handleDelete(a.id)} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {myAssessments.length === 0 && <p className="text-slate-500 p-8 text-center border border-dashed border-white/10 rounded-2xl">Belum ada materi terdaftar untuk {authUser.subject}.</p>}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- INPUT MATRIX VIEW ---
+        function InputMatrixView({ data, authUser, activeClasses, showMessage }) {
+            const [selectedClassId, setSelectedClassId] = useState(activeClasses[0]?.id || '');
+            const [localGrades, setLocalGrades] = useState({});
+            
+            const [isSavingBatch, setIsSavingBatch] = useState(false);
+            const [batchProgress, setBatchProgress] = useState('');
+
+            // FILTER: Matriks hanya membuat kolom untuk tugas milik guru yang sedang login
+            const myAssessments = useMemo(() => {
+                return data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
+            }, [data.assessments, authUser.id]);
+
+            const classStudents = data.students.filter(s => s.classId === selectedClassId);
+
+            useEffect(() => {
+                const currentGrades = {};
+                classStudents.forEach(s => {
+                    myAssessments.forEach(a => {
+                        const key = `${s.id}_${a.id}`;
+                        if(data.grades[key] !== undefined) currentGrades[key] = data.grades[key];
+                    });
+                });
+                setLocalGrades(currentGrades);
+            }, [selectedClassId, data.grades, myAssessments, classStudents.length]);
+
+            const handleGradeChange = (studentId, assId, val) => {
+                setLocalGrades(prev => ({ ...prev, [`${studentId}_${assId}`]: val }));
+            };
+
+            const handleSave = async (studentId, assId) => {
+                const score = localGrades[`${studentId}_${assId}`];
+                if(score === undefined || score === '') return;
+                const id = `${studentId}_${assId}`;
+                await setDoc(doc(db, 'grades', id), { studentId, assessmentId: assId, score: Number(score), updatedAt: Date.now() });
+            };
+
+            const calculateNA = (studentId) => {
+                let totalWeightedScore = 0;
+                let totalWeight = 0;
+                let hasScores = false;
+
+                myAssessments.forEach(a => {
+                    const globalScore = data.grades[`${studentId}_${a.id}`];
+                    const localScore = localGrades[`${studentId}_${a.id}`];
+                    const scoreToUse = localScore !== undefined && localScore !== '' ? Number(localScore) : globalScore;
+                    
+                    if(scoreToUse !== undefined) {
+                        const w = Number(a.weight) || 1;
+                        totalWeightedScore += (scoreToUse * w);
+                        totalWeight += w;
+                        hasScores = true;
+                    }
+                });
+
+                if(!hasScores || totalWeight === 0) return '-';
+                return Math.round(totalWeightedScore / totalWeight);
+            };
+
+            // LOGIKA SMART PASTE MULTI-BARIS
+            const handlePasteToTable = async (e, startRowIdx, targetAssId) => {
+                const pasteData = e.clipboardData.getData('text');
+                if (!pasteData) return;
+
+                const lines = pasteData.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+                
+                if (lines.length > 1) {
+                    e.preventDefault(); 
+                    
+                    const newGrades = { ...localGrades };
+                    const updatesToSave = [];
+
+                    let valIndex = 0;
+                    for (let i = startRowIdx; i < classStudents.length && valIndex < lines.length; i++) {
+                        const valStr = lines[valIndex].trim().replace(',', '.');
+                        if (valStr !== '') {
+                            const val = parseFloat(valStr);
+                            if (!isNaN(val) && val >= 0 && val <= 100) {
+                                const student = classStudents[i];
+                                newGrades[`${student.id}_${targetAssId}`] = val;
+                                updatesToSave.push({ studentId: student.id, val });
+                            }
+                        }
+                        valIndex++;
+                    }
+
+                    setLocalGrades(newGrades);
+
+                    if (updatesToSave.length > 0) {
+                        setIsSavingBatch(true);
+                        let count = 0;
+                        for (const item of updatesToSave) {
+                            const id = `${item.studentId}_${targetAssId}`;
+                            await setDoc(doc(db, 'grades', id), { studentId: item.studentId, assessmentId: targetAssId, score: item.val, updatedAt: Date.now() });
+                            count++;
+                            setBatchProgress(`Menyimpan ${count} / ${updatesToSave.length} nilai...`); 
+                            await new Promise(resolve => setTimeout(resolve, 350));
+                        }
+                        setIsSavingBatch(false);
+                        setBatchProgress('');
+                        showMessage(`Paste cerdas berhasil! ${count} nilai telah tersimpan ke database.`, "Sukses");
+                    }
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in relative">
+                    {isSavingBatch && (
+                        <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-indigo-500/50 p-8 rounded-2xl flex flex-col items-center shadow-[0_0_50px_rgba(99,102,241,0.2)]">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+                                <h3 className="text-xl font-bold text-white tracking-tight">Memproses Paste Cerdas...</h3>
+                                <p className="text-emerald-400 mt-2 font-mono text-sm font-bold">{batchProgress}</p>
+                                <p className="text-slate-400 text-xs mt-2">Mohon jangan tutup halaman ini.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/5 pb-6 gap-4">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white tracking-tight">Input Nilai Matrix</h2>
+                            <p className="text-slate-400 mt-1">Blok nilai di Excel, klik di sel pertama, lalu tekan <b>Ctrl+V</b>.</p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                        {activeClasses.map(c => (
+                            <button key={c.id} onClick={() => setSelectedClassId(c.id)}
+                                className={`px-6 py-3 rounded-xl font-bold border transition-all flex-shrink-0 z-10 relative ${selectedClassId === c.id ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-slate-800'}`}>
+                                <span className="pointer-events-none">{c.name}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {selectedClassId ? (
+                        <div className="bg-[#0b1126] border border-white/10 rounded-2xl overflow-x-auto custom-scrollbar p-1 shadow-2xl relative">
+                            <table className="w-full text-left border-collapse min-w-max">
+                                <thead className="bg-slate-950">
+                                    <tr>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 w-12 text-center">No</th>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 w-64 border-r">Nama Siswa</th>
+                                        {myAssessments.map(a => (
+                                            <th key={a.id} className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-32">
+                                                <div className="truncate w-full" title={a.title}>{a.title}</div>
+                                                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded mt-1 inline-block">W: {a.weight||1}</span>
+                                            </th>
+                                        ))}
+                                        <th className="p-4 text-indigo-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center bg-indigo-500/5 w-24">NA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {classStudents.map((s, idx) => {
+                                        const naVal = calculateNA(s.id);
+                                        const naColor = naVal !== '-' && naVal < 70 ? 'text-red-400' : 'text-indigo-400';
+                                        
+                                        return (
+                                        <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
+                                            <td className="p-4 text-slate-500 font-mono text-sm text-center">{idx + 1}</td>
+                                            <td className="p-4 text-slate-200 font-medium whitespace-nowrap sticky left-0 bg-[#0b1126]/90 backdrop-blur-sm z-10 border-r border-white/5">{s.name}</td>
+                                            {myAssessments.map(a => {
+                                                const globalScore = data.grades[`${s.id}_${a.id}`];
+                                                const localScore = localGrades[`${s.id}_${a.id}`];
+                                                const isUnsaved = localScore !== undefined && localScore !== '' && Number(localScore) !== Number(globalScore);
+                                                
+                                                return (
+                                                <td key={a.id} className="p-2 text-center relative group">
+                                                    <input 
+                                                        type="number" min="0" max="100" 
+                                                        value={localScore !== undefined ? localScore : ''} 
+                                                        onChange={e => handleGradeChange(s.id, a.id, e.target.value)}
+                                                        onBlur={() => handleSave(s.id, a.id)}
+                                                        onPaste={(e) => handlePasteToTable(e, idx, a.id)}
+                                                        className={`w-full bg-transparent border-b-2 px-2 py-2 text-center font-bold outline-none transition-all placeholder:text-slate-700
+                                                            ${isUnsaved ? 'border-yellow-500 text-yellow-400 bg-yellow-500/5' : 'border-transparent text-white focus:border-indigo-500 hover:border-white/20 focus:bg-indigo-500/10'}
+                                                            ${localScore !== undefined && Number(localScore) < 70 ? '!text-red-400' : ''}
+                                                        `}
+                                                        placeholder="-"
+                                                    />
+                                                    {isUnsaved && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>}
+                                                </td>
+                                                )
+                                            })}
+                                            <td className={`p-4 text-center font-black font-mono bg-indigo-500/5 text-lg ${naColor}`}>{naVal}</td>
+                                        </tr>
+                                    )})}
+                                </tbody>
+                            </table>
+                            {classStudents.length === 0 && <div className="p-8 text-center text-slate-500">Siswa kosong di kelas ini.</div>}
+                        </div>
+                    ) : (
+                        <div className="text-slate-500 text-center py-8">Pilih kelas terlebih dahulu.</div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- RECAP VIEW (GABUNGAN LAPORAN & KONVERSI DENGAN JENJANG/PARALEL) ---
+        function RecapView({ data, authUser, activeClasses, showMessage }) {
+            const [viewMode, setViewMode] = useState('class'); // 'class' atau 'jenjang'
+            const [selectedClassId, setSelectedClassId] = useState(activeClasses[0]?.id || '');
+            const [selectedJenjang, setSelectedJenjang] = useState('9'); // Default kelas 9
+            
+            const [targetMin, setTargetMin] = useState(80);
+            const [targetMax, setTargetMax] = useState(95);
+
+            // FILTER: Tabel rekap hanya merujuk pada penilaian milik guru yang sedang login
+            const myAssessments = useMemo(() => {
+                return data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
+            }, [data.assessments, authUser.id]);
+
+            // Tentukan siswa mana yang ditampilkan berdasarkan mode
+            const displayedStudents = useMemo(() => {
+                if (viewMode === 'class') {
+                    return data.students.filter(s => s.classId === selectedClassId);
+                } else {
+                    // Filter berdasarkan jenjang (angka pertama dari nama kelas, misal "9A" -> "9")
+                    const validClassIds = activeClasses.filter(c => c.name.startsWith(selectedJenjang)).map(c => c.id);
+                    return data.students.filter(s => validClassIds.includes(s.classId));
+                }
+            }, [data.students, activeClasses, selectedClassId, selectedJenjang, viewMode]);
+
+            // Hitung nilai asli (original) dengan pembobotan
+            const getOriginalScore = (studentId) => {
+                let totalWeightedScore = 0;
+                let totalWeight = 0;
+                let hasScores = false;
+                myAssessments.forEach(a => {
+                    const score = data.grades[`${studentId}_${a.id}`];
+                    if(score !== undefined) {
+                        const w = Number(a.weight) || 1;
+                        totalWeightedScore += (score * w);
+                        totalWeight += w;
+                        hasScores = true;
+                    }
+                });
+                return hasScores && totalWeight > 0 ? (totalWeightedScore / totalWeight) : null;
+            };
+
+            // Tambahkan properti originalScore ke setiap siswa
+            const studentsWithOriginal = useMemo(() => {
+                return displayedStudents.map(s => ({ ...s, originalScore: getOriginalScore(s.id) }));
+            }, [displayedStudents, data.grades, myAssessments]);
+
+            // Cari nilai Min & Max Aktual berdasarkan skup (kelas/jenjang)
+            const { actualMin, actualMax } = useMemo(() => {
+                const validScores = studentsWithOriginal.map(s => s.originalScore).filter(val => val !== null);
+                if (validScores.length === 0) return { actualMin: 0, actualMax: 0 };
+                return {
+                    actualMin: Math.min(...validScores),
+                    actualMax: Math.max(...validScores)
+                };
+            }, [studentsWithOriginal]);
+
+            // Rumus Konversi
+            const convertScore = (original) => {
+                if (original === null) return null;
+                if (actualMax === actualMin) return Number(targetMax); 
+                const ratio = (original - actualMin) / (actualMax - actualMin);
+                const converted = Number(targetMin) + (ratio * (Number(targetMax) - Number(targetMin)));
+                return Math.round(converted); // Dibulatkan agar bersih
+            };
+
+            const handleDownloadCSV = () => {
+                let fileName = 'Rekap_Nilai.csv';
+                let classLabel = '';
+                
+                if (viewMode === 'class') {
+                    const cClass = activeClasses.find(c => c.id === selectedClassId);
+                    if (cClass) {
+                        fileName = `Rekap_Nilai_Kelas_${cClass.name}.csv`;
+                        classLabel = cClass.name;
+                    }
+                } else {
+                    fileName = `Rekap_Nilai_Paralel_Kelas_${selectedJenjang}.csv`;
+                    classLabel = `PARALEL KELAS ${selectedJenjang}`;
+                }
+
+                // IDENTITAS EXCEL (BARIS AWAL)
+                let csvPrefix = `"MATA PELAJARAN","${authUser.subject.toUpperCase()}"\r\n`;
+                csvPrefix += `"GURU PENGAJAR","${authUser.name.toUpperCase()}"\r\n`;
+                csvPrefix += `"KELAS","${classLabel.toUpperCase()}"\r\n\r\n`;
+
+                let headers = ["No"];
+                if (viewMode === 'jenjang') headers.push("Kelas");
+                headers.push("Nama Siswa");
+                
+                myAssessments.forEach(a => {
+                    headers.push(`${a.title} (Bobot: ${a.weight||1})`);
+                });
+                headers.push("Rata-rata Asli");
+                headers.push("Nilai Konversi");
+
+                // Format CSV Universal (Koma sebagai pemisah kolom, titik untuk desimal)
+                let csvContent = csvPrefix + headers.map(h => `"${h}"`).join(",") + "\r\n";
+
+                studentsWithOriginal.forEach((s, idx) => {
+                    let rowData = [];
+                    rowData.push(idx + 1);
+                    
+                    if (viewMode === 'jenjang') {
+                        const clsName = activeClasses.find(c => c.id === s.classId)?.name || '-';
+                        rowData.push(`"${clsName}"`);
+                    }
+
+                    rowData.push(`"${s.name}"`);
+                    
+                    myAssessments.forEach(a => {
+                        const score = data.grades[`${s.id}_${a.id}`];
+                        rowData.push(score !== undefined ? score : '');
+                    });
+
+                    const finalScore = convertScore(s.originalScore);
+                    const originalScoreStr = s.originalScore !== null ? s.originalScore.toFixed(1) : '';
+                    const finalScoreStr = finalScore !== null ? finalScore : '';
+
+                    rowData.push(originalScoreStr);
+                    rowData.push(finalScoreStr);
+                    
+                    csvContent += rowData.join(",") + "\r\n";
+                });
+
+                const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", fileName);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/5 pb-6 gap-4">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                                <Layers className="text-indigo-400"/> Rekap & Konversi
+                            </h2>
+                            <p className="text-slate-400 mt-1">Laporan mentah dan konversi nilai untuk mata pelajaran {authUser.subject}.</p>
+                        </div>
+                        <button onClick={handleDownloadCSV} className="bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 px-6 py-3 rounded-xl text-sm font-bold flex gap-2 hover:bg-emerald-600 hover:text-white transition-all">
+                            <Download size={18} /> DOWNLOAD CSV
+                        </button>
+                    </div>
+
+                    <div className="flex gap-2 p-1 bg-slate-900/50 border border-white/10 w-fit rounded-xl">
+                        <button onClick={() => setViewMode('class')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'class' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Per Kelas</button>
+                        <button onClick={() => setViewMode('jenjang')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'jenjang' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Per Jenjang (Paralel)</button>
+                    </div>
+
+                    <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                        {viewMode === 'class' ? (
+                            activeClasses.map(c => (
+                                <button key={c.id} onClick={() => setSelectedClassId(c.id)}
+                                    className={`px-6 py-3 rounded-xl font-bold border transition-all flex-shrink-0 z-10 relative ${selectedClassId === c.id ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-slate-800'}`}>
+                                    <span className="pointer-events-none">{c.name}</span>
+                                </button>
+                            ))
+                        ) : (
+                            ['9', '8', '7'].map(j => (
+                                <button key={j} onClick={() => setSelectedJenjang(j)}
+                                    className={`px-8 py-3 rounded-xl font-bold border transition-all flex-shrink-0 z-10 relative ${selectedJenjang === j ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-slate-800'}`}>
+                                    <span className="pointer-events-none">KELAS {j} (Semua)</span>
+                                </button>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="lg:w-72 flex flex-col gap-6 shrink-0">
+                            <div className="bg-[#0b1126] border border-white/10 rounded-2xl p-6 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-16 opacity-10 bg-gradient-to-br from-indigo-500 to-purple-500 blur-2xl"></div>
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Target Rapor (KKM)</h3>
+                                <div className="space-y-4 relative z-10">
+                                    <div>
+                                        <label className="text-xs text-slate-500 mb-1 block">Target Min (KKM)</label>
+                                        <input type="number" value={targetMin} onChange={e => setTargetMin(e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 mb-1 block">Target Max</label>
+                                        <input type="number" value={targetMax} onChange={e => setTargetMax(e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-[#0b1126] border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-16 opacity-10 bg-gradient-to-br from-cyan-500 to-blue-500 blur-2xl"></div>
+                                <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">Rentang Aktual</h3>
+                                <div className="space-y-4 relative z-10">
+                                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                        <span className="text-slate-400 text-sm">Terendah:</span>
+                                        <span className="text-white font-mono font-bold text-xl">{actualMin.toFixed(1)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-400 text-sm">Tertinggi:</span>
+                                        <span className="text-white font-mono font-bold text-xl">{actualMax.toFixed(1)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 bg-[#0b1126] border border-white/10 rounded-2xl overflow-x-auto custom-scrollbar p-1 shadow-2xl relative">
+                            <table className="w-full text-left border-collapse min-w-max">
+                                <thead className="bg-slate-950">
+                                    <tr>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-12">No</th>
+                                        {viewMode === 'jenjang' && <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 w-24">Kelas</th>}
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 border-r w-64">Nama Siswa</th>
+                                        {myAssessments.map(a => (
+                                            <th key={a.id} className="p-4 text-slate-500 font-bold text-[10px] uppercase tracking-wider border-b border-white/10 text-center w-20">
+                                                <div className="truncate w-full" title={a.title}>{a.title}</div>
+                                                <span className="text-indigo-400/50">W:{a.weight||1}</span>
+                                            </th>
+                                        ))}
+                                        <th className="p-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-24">Asli</th>
+                                        <th className="p-4 text-emerald-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center bg-emerald-500/10 w-24">Konversi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {studentsWithOriginal.map((s, idx) => {
+                                        const finalScore = convertScore(s.originalScore);
+                                        const finalColor = finalScore && finalScore < targetMin ? 'text-red-400' : 'text-emerald-400';
+                                        
+                                        return (
+                                        <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
+                                            <td className="p-4 text-slate-500 font-mono text-sm text-center">{idx + 1}</td>
+                                            {viewMode === 'jenjang' && <td className="p-4 text-slate-400 text-sm font-bold">{activeClasses.find(c => c.id === s.classId)?.name}</td>}
+                                            <td className="p-4 text-slate-200 font-bold whitespace-nowrap sticky left-0 bg-[#0b1126]/90 backdrop-blur-sm z-10 border-r border-white/5">{s.name}</td>
+                                            
+                                            {myAssessments.map(a => {
+                                                const score = data.grades[`${s.id}_${a.id}`];
+                                                return (
+                                                    <td key={a.id} className="p-2 text-center text-slate-600 font-mono text-sm">
+                                                        {score !== undefined ? score : '-'}
+                                                    </td>
+                                                );
+                                            })}
+
+                                            <td className="p-4 text-center text-slate-300 font-mono">
+                                                {s.originalScore !== null ? s.originalScore.toFixed(1) : '-'}
+                                            </td>
+                                            <td className={`p-4 text-center font-black font-mono bg-emerald-500/5 text-lg ${finalColor}`}>
+                                                {finalScore !== null ? finalScore : '-'}
+                                            </td>
+                                        </tr>
+                                    )})}
+                                </tbody>
+                            </table>
+                            {studentsWithOriginal.length === 0 && <div className="p-8 text-center text-slate-500">Tidak ada data siswa untuk ditampilkan.</div>}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- SETTINGS VIEW (KHUSUS ADMIN) ---
+        function SettingsView({ authUser, data, showMessage, showConfirm }) {
+            const [urlInput, setUrlInput] = useState(activeApiKey || '');
+            const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('seru_master_sheet_url') || 'https://docs.google.com/spreadsheets/d/1AgvT6eVfMCQvuvyJ1XOBRGst1luByFE05Qq2DkG3DsY/edit');
+            const [showImport, setShowImport] = useState(false);
+            const [txt, setTxt] = useState('');
+            const [isSaving, setIsSaving] = useState(false);
+
+            if (!authUser.isAdmin) {
+                return (
+                    <div className="flex flex-col items-center justify-center h-[60vh] text-center animate-in fade-in zoom-in duration-300">
+                        <div className="p-6 bg-slate-900/50 rounded-full mb-6 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                            <Lock size={64} className="text-slate-500" />
+                        </div>
+                        <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Akses Terkunci</h2>
+                        <p className="text-slate-400 max-w-md">Tab Pengaturan dan Sinkronisasi Data Master Siswa hanya dapat diakses oleh Admin Sekolah (Bpk. Gagat).</p>
+                    </div>
+                );
+            }
+
+            const handleSaveUrl = () => {
+                localStorage.setItem(`seru_api_${authUser.id}`, urlInput.trim());
+                localStorage.setItem('seru_master_sheet_url', sheetUrl.trim());
+                showMessage("Konfigurasi URL Spreadsheet disimpan! Memuat ulang sistem...", "Tersimpan");
+                setTimeout(() => window.location.reload(), 2000);
+            };
+
+            const handleResetUrl = () => {
+                showConfirm("Kembalikan ke URL default? (Database bawaan aplikasi)", () => {
+                    localStorage.removeItem(`seru_api_${authUser.id}`);
+                    showMessage("Dikembalikan ke default. Memuat ulang sistem...", "Reset Selesai");
+                    setTimeout(() => window.location.reload(), 2000);
+                });
+            }
+
+            const handleImport = async () => {
+                if (!txt.trim()) return;
+                setIsSaving(true);
+                try {
+                    const textToParse = txt.replace(/\n/g, ' '); 
+                    const regex = /(.+?)([789][A-Za-z])/gi;
+                    let match;
+                    const studentsToAdd = [];
+                    
+                    while ((match = regex.exec(textToParse)) !== null) {
+                        let studentName = match[1].trim();
+                        let classNameRaw = match[2].toUpperCase().trim();
+                        studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
+                        if (studentName && classNameRaw) {
+                            studentsToAdd.push({ name: studentName, className: classNameRaw });
+                        }
+                    }
+
+                    if (studentsToAdd.length === 0) {
+                        const lines = txt.split('\n');
+                        for (let line of lines) {
+                            line = line.trim();
+                            if (!line || line.toLowerCase().startsWith('nama')) continue;
+                            let studentName = '';
+                            let classNameRaw = '';
+                            
+                            if (line.includes(',') || line.includes('\t')) {
+                                const parts = line.split(/[,\t]/);
+                                if (parts.length >= 2) {
+                                    studentName = parts[0].trim();
+                                    classNameRaw = parts[parts.length-1].trim(); 
+                                }
+                            } else {
+                                const lastSpaceIndex = line.lastIndexOf(' ');
+                                if (lastSpaceIndex !== -1) {
+                                    studentName = line.substring(0, lastSpaceIndex).trim();
+                                    classNameRaw = line.substring(lastSpaceIndex).trim();
+                                }
+                            }
+
+                            if (!studentName || !classNameRaw) continue;
+                            studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
+                            if(studentName) {
+                                studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
+                            }
+                        }
+                    }
+
+                    if (studentsToAdd.length === 0) {
+                        showMessage("Gagal membaca format! Pastikan ada format Nama dan Kelas (Angka & Huruf).", "Error");
+                        setIsSaving(false);
+                        return;
+                    }
+
+                    let count = 0;
+                    const localClassesRef = [...data.classes]; 
+                    const localStudentsTrack = new Set(data.students.map(s => `${s.name.toUpperCase()}_${s.classId}`));
+
+                    for (const s of studentsToAdd) {
+                        const targetClassName = s.className;
+                        let targetClass = localClassesRef.find(c => c.name.toUpperCase() === targetClassName);
+                        let classId = targetClass?.id;
+                        
+                        if (!targetClass) {
+                            const newClassRef = await addDoc(collection(db, 'classes'), { name: targetClassName, isActive: true, createdAt: Date.now() });
+                            classId = newClassRef.id;
+                            localClassesRef.push({ id: classId, name: targetClassName, isActive: true });
+                            await new Promise(resolve => setTimeout(resolve, 300)); 
+                        } else if (targetClass.isActive === false) {
+                            await updateDoc(doc(db, 'classes', classId), { isActive: true });
+                            targetClass.isActive = true;
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        }
+                        
+                        const studentKey = `${s.name.toUpperCase()}_${classId}`;
+                        
+                        if (!localStudentsTrack.has(studentKey)) {
+                            await addDoc(collection(db, 'students'), { name: s.name, classId, createdAt: Date.now() });
+                            localStudentsTrack.add(studentKey);
+                            count++;
+                            
+                            setTxt(`MEMPROSES PENYIMPANAN KE GOOGLE SHEET...\nSedang menyimpan: ${count} dari ${studentsToAdd.length} siswa.\n\nMohon tunggu sampai selesai (jangan tutup halaman ini)...`);
+                            await new Promise(resolve => setTimeout(resolve, 350));
+                        }
+                    }
+                    
+                    showMessage(`Import ${count} siswa berhasil disimpan ke database!`, "Sukses"); 
+                    setTxt(''); 
+                    setShowImport(false);
+                } catch (e) {
+                    showMessage("Terjadi kesalahan import: " + e.message, "Error");
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in pt-8">
+                    <div className="border-b border-white/5 pb-6">
+                        <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Settings className="text-indigo-400" /> Ruang Admin</h2>
+                        <p className="text-slate-400 mt-1">Konfigurasi koneksi Database dan Manajemen Master Data Siswa Sekolah.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
+                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Database Sentral</h3>
+                            
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl text-sm text-indigo-200">
+                                Ini adalah URL Spreadsheet utama tempat menyimpan data siswa secara permanen agar dapat diakses semua guru.
+                            </div>
+                            
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Web App URL (Google Apps Script)</label>
+                                <input 
+                                    type="text" 
+                                    value={urlInput} 
+                                    onChange={e => setUrlInput(e.target.value)} 
+                                    placeholder="https://script.google.com/macros/s/.../exec" 
+                                    className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white outline-none focus:border-indigo-500 font-mono text-sm" 
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button onClick={handleSaveUrl} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 flex-1 shadow-lg shadow-indigo-500/25 transition-all">Simpan URL</button>
+                                <button onClick={handleResetUrl} className="bg-slate-800 text-slate-300 px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition-all">Reset</button>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
+                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Users size={20} className="text-emerald-400"/> Master Data Siswa</h3>
+                            
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-sm text-emerald-200">
+                                Import data siswa seluruh sekolah secara permanen dari sini. Guru lain (Pak Indra, Ibu Yuyun) akan otomatis bisa melihat daftar siswa ini.
+                            </div>
+
+                            <button onClick={() => setShowImport(true)} className="w-full mt-4 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 py-4 rounded-xl font-bold flex justify-center items-center gap-3 hover:bg-emerald-600 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                                <Clipboard size={22} /> IMPORT DATA DARI EXCEL
+                            </button>
+
+                            <div className="pt-4 border-t border-white/10 mt-4">
+                                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Link Google Sheet Master (Opsional)</label>
+                                <input 
+                                    type="text" 
+                                    value={sheetUrl} 
+                                    onChange={e => setSheetUrl(e.target.value)} 
+                                    placeholder="https://docs.google.com/spreadsheets/d/..." 
+                                    className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-emerald-500 font-mono text-sm mb-3" 
+                                />
+                                <button 
+                                    onClick={() => sheetUrl ? window.open(sheetUrl, '_blank') : showMessage('Silakan cari dan tempelkan link Google Sheet Anda di kolom atas terlebih dahulu, lalu klik Simpan URL Baru.', 'Link Belum Diisi')} 
+                                    className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all"
+                                >
+                                    <FileSpreadsheet size={18} /> BUKA SPREADSHEET MASTER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* MODAL IMPORT */}
+                    {showImport && (
+                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
+                        <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Clipboard className="text-emerald-400"/> Paste Data Excel</h3>
+                                <button onClick={() => setShowImport(false)} className="text-slate-400 hover:text-white"><X/></button>
+                            </div>
+                            <div className="p-6 flex-1 overflow-auto">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs text-emerald-300 mb-4 font-mono">
+                                Tempelkan data seluruh siswa di sini!<br/>Contoh: <strong>BUDI 9AANDI 9B</strong>
+                            </div>
+                            <textarea value={txt} onChange={e => setTxt(e.target.value)} className="w-full h-64 p-4 bg-slate-950 border border-white/10 rounded-xl font-mono text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none custom-scrollbar" placeholder="Paste data siswa disini..."></textarea>
+                            </div>
+                            <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                            <button onClick={handleImport} disabled={isSaving} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 shadow-lg transition-all disabled:opacity-50">
+                                {isSaving ? 'MEMPROSES...' : 'PROSES DATA'}
+                            </button>
+                            </div>
+                        </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ArtGradesApp />);
+    </script>
+</body>
+</html>
