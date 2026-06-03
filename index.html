@@ -378,7 +378,7 @@
                             </form>
                             
                             <div className="mt-8 text-center border-t border-white/5 pt-4">
-                                <p className="text-[10px] text-slate-600 font-mono tracking-widest">VERSI MULTI-DATABASE // V2.2</p>
+                                <p className="text-[10px] text-slate-600 font-mono tracking-widest">VERSI MULTI-DATABASE // V2.3</p>
                             </div>
                         </div>
                     </div>
@@ -455,7 +455,10 @@
             
             // FILTER: Hanya hitung materi & nilai milik guru yang sedang login
             const myAssessments = useMemo(() => {
-                return data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
+                return data.assessments.filter(a => {
+                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
+                    return aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
+                });
             }, [data.assessments, authUser.id]);
 
             const myGradesCount = useMemo(() => {
@@ -661,8 +664,15 @@
 
             // FILTER: Hanya tampilkan materi milik guru yang sedang login & sesuai jenjang terpilih
             const myFilteredAssessments = useMemo(() => {
-                const allMine = data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
-                return allMine.filter(a => a.grade === activeGrade || (!a.grade && activeGrade === '9'));
+                return data.assessments.filter(a => {
+                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
+                    const aGrade = a.teacherId && a.teacherId.includes('|') ? String(a.teacherId.split('|')[1]) : (a.grade ? String(a.grade) : '9');
+                    
+                    const isMine = aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
+                    const isCorrectGrade = aGrade === String(activeGrade);
+                    
+                    return isMine && isCorrectGrade;
+                });
             }, [data.assessments, authUser.id, activeGrade]);
 
             const handleAdd = async (e) => {
@@ -672,8 +682,8 @@
                     title: title.trim(), 
                     description: desc.trim(), 
                     weight: Number(weight), 
-                    teacherId: authUser.id, 
-                    grade: activeGrade,
+                    teacherId: authUser.id + '|' + activeGrade, // Kita sisipkan info jenjang (grade) ke ID Guru
+                    grade: activeGrade, // Tetap kita kirim sebagai cadangan
                     createdAt: Date.now() 
                 });
                 setTitle(''); setDesc(''); setWeight(1);
@@ -800,10 +810,18 @@
 
             // FILTER: Matriks menyesuaikan tugas dengan jenjang kelas yang dipilih
             const myFilteredAssessments = useMemo(() => {
-                const allMine = data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
                 const activeClassObj = activeClasses.find(c => c.id === selectedClassId);
-                const grade = activeClassObj ? activeClassObj.name.charAt(0) : '9';
-                return allMine.filter(a => a.grade === grade || (!a.grade && grade === '9'));
+                const targetGrade = activeClassObj ? activeClassObj.name.charAt(0) : '9';
+                
+                return data.assessments.filter(a => {
+                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
+                    const aGrade = a.teacherId && a.teacherId.includes('|') ? String(a.teacherId.split('|')[1]) : (a.grade ? String(a.grade) : '9');
+                    
+                    const isMine = aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
+                    const isCorrectGrade = aGrade === String(targetGrade);
+                    
+                    return isMine && isCorrectGrade;
+                });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId]);
 
             const classStudents = data.students.filter(s => s.classId === selectedClassId);
@@ -1000,11 +1018,19 @@
 
             // FILTER: Tabel rekap menyesuaikan materi dengan jenjang yang dipilih
             const myFilteredAssessments = useMemo(() => {
-                const allMine = data.assessments.filter(a => a.teacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat'));
-                const grade = viewMode === 'class' 
+                const targetGrade = viewMode === 'class' 
                     ? (activeClasses.find(c => c.id === selectedClassId)?.name.charAt(0) || '9') 
                     : selectedJenjang;
-                return allMine.filter(a => a.grade === grade || (!a.grade && grade === '9'));
+                    
+                return data.assessments.filter(a => {
+                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
+                    const aGrade = a.teacherId && a.teacherId.includes('|') ? String(a.teacherId.split('|')[1]) : (a.grade ? String(a.grade) : '9');
+                    
+                    const isMine = aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
+                    const isCorrectGrade = aGrade === String(targetGrade);
+                    
+                    return isMine && isCorrectGrade;
+                });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId, selectedJenjang, viewMode]);
 
             // Tentukan siswa mana yang ditampilkan berdasarkan mode
