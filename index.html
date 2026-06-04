@@ -950,15 +950,15 @@
                             <table className="w-full text-left border-collapse min-w-max">
                                 <thead className="bg-slate-950">
                                     <tr>
-                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 w-12 text-center">No</th>
-                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 w-64 border-r">Nama Siswa</th>
+                                        <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 w-8 md:w-12 text-center shrink-0">No</th>
+                                        <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Nama Siswa</th>
                                         {myFilteredAssessments.map(a => (
-                                            <th key={a.id} className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-32">
+                                            <th key={a.id} className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center min-w-[80px] md:min-w-[120px]">
                                                 <div className="truncate w-full" title={a.title}>{a.title}</div>
-                                                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded mt-1 inline-block">W: {a.weight||1}</span>
+                                                <span className="text-[9px] md:text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">W: {a.weight||1}</span>
                                             </th>
                                         ))}
-                                        <th className="p-4 text-indigo-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center bg-indigo-500/5 w-24">NA</th>
+                                        <th className="p-2 md:p-4 text-indigo-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center bg-indigo-500/5 min-w-[60px] md:min-w-[80px]">NA</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -968,22 +968,22 @@
                                         
                                         return (
                                         <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
-                                            <td className="p-4 text-slate-500 font-mono text-sm text-center">{idx + 1}</td>
-                                            <td className="p-4 text-slate-200 font-medium whitespace-nowrap sticky left-0 bg-[#0b1126]/90 backdrop-blur-sm z-10 border-r border-white/5">{s.name}</td>
+                                            <td className="p-2 md:p-4 text-slate-500 font-mono text-xs md:text-sm text-center">{idx + 1}</td>
+                                            <td className="p-2 md:p-4 text-slate-200 font-medium text-xs md:text-sm whitespace-normal break-words leading-tight sticky left-0 bg-[#0b1126] z-10 border-r border-white/5 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{s.name}</td>
                                             {myFilteredAssessments.map(a => {
                                                 const globalScore = data.grades[`${s.id}_${a.id}`];
                                                 const localScore = localGrades[`${s.id}_${a.id}`];
                                                 const isUnsaved = localScore !== undefined && localScore !== '' && Number(localScore) !== Number(globalScore);
                                                 
                                                 return (
-                                                <td key={a.id} className="p-2 text-center relative group">
+                                                <td key={a.id} className="p-1 md:p-2 text-center relative group">
                                                     <input 
                                                         type="number" min="0" max="100" 
                                                         value={localScore !== undefined ? localScore : ''} 
                                                         onChange={e => handleGradeChange(s.id, a.id, e.target.value)}
                                                         onBlur={() => handleSave(s.id, a.id)}
                                                         onPaste={(e) => handlePasteToTable(e, idx, a.id)}
-                                                        className={`w-full bg-transparent border-b-2 px-2 py-2 text-center font-bold outline-none transition-all placeholder:text-slate-700
+                                                        className={`w-full bg-transparent border-b-2 px-1 py-2 md:px-2 text-center font-bold text-sm md:text-base outline-none transition-all placeholder:text-slate-700
                                                             ${isUnsaved ? 'border-yellow-500 text-yellow-400 bg-yellow-500/5' : 'border-transparent text-white focus:border-indigo-500 hover:border-white/20 focus:bg-indigo-500/10'}
                                                             ${localScore !== undefined && Number(localScore) < 70 ? '!text-red-400' : ''}
                                                         `}
@@ -993,7 +993,7 @@
                                                 </td>
                                                 )
                                             })}
-                                            <td className={`p-4 text-center font-black font-mono bg-indigo-500/5 text-lg ${naColor}`}>{naVal}</td>
+                                            <td className={`p-2 md:p-4 text-center font-black font-mono bg-indigo-500/5 text-sm md:text-lg ${naColor}`}>{naVal}</td>
                                         </tr>
                                     )})}
                                 </tbody>
@@ -1224,17 +1224,17 @@
                             <table className="w-full text-left border-collapse min-w-max">
                                 <thead className="bg-slate-950">
                                     <tr>
-                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-12">No</th>
-                                        {viewMode === 'jenjang' && <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 w-24">Kelas</th>}
-                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 border-r w-64">Nama Siswa</th>
+                                        <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center w-8 md:w-12">No</th>
+                                        {viewMode === 'jenjang' && <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 min-w-[50px] md:w-24 text-center">Kls</th>}
+                                        <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 border-r min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Nama Siswa</th>
                                         {myFilteredAssessments.map(a => (
-                                            <th key={a.id} className="p-4 text-slate-500 font-bold text-[10px] uppercase tracking-wider border-b border-white/10 text-center w-20">
+                                            <th key={a.id} className="p-2 md:p-4 text-slate-500 font-bold text-[9px] md:text-[10px] uppercase tracking-wider border-b border-white/10 text-center min-w-[60px] md:min-w-[80px]">
                                                 <div className="truncate w-full" title={a.title}>{a.title}</div>
                                                 <span className="text-indigo-400/50">W:{a.weight||1}</span>
                                             </th>
                                         ))}
-                                        <th className="p-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-24">Asli</th>
-                                        <th className="p-4 text-emerald-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center bg-emerald-500/10 w-24">Konversi</th>
+                                        <th className="p-2 md:p-4 text-slate-300 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center min-w-[60px] md:w-24">Asli</th>
+                                        <th className="p-2 md:p-4 text-emerald-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center bg-emerald-500/10 min-w-[60px] md:w-24">Konv</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1244,23 +1244,23 @@
                                         
                                         return (
                                         <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
-                                            <td className="p-4 text-slate-500 font-mono text-sm text-center">{idx + 1}</td>
-                                            {viewMode === 'jenjang' && <td className="p-4 text-slate-400 text-sm font-bold">{activeClasses.find(c => c.id === s.classId)?.name}</td>}
-                                            <td className="p-4 text-slate-200 font-bold whitespace-nowrap sticky left-0 bg-[#0b1126]/90 backdrop-blur-sm z-10 border-r border-white/5">{s.name}</td>
+                                            <td className="p-2 md:p-4 text-slate-500 font-mono text-xs md:text-sm text-center">{idx + 1}</td>
+                                            {viewMode === 'jenjang' && <td className="p-2 md:p-4 text-slate-400 text-xs md:text-sm font-bold text-center">{activeClasses.find(c => c.id === s.classId)?.name}</td>}
+                                            <td className="p-2 md:p-4 text-slate-200 font-medium text-xs md:text-sm whitespace-normal break-words leading-tight sticky left-0 bg-[#0b1126] z-10 border-r border-white/5 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{s.name}</td>
                                             
                                             {myFilteredAssessments.map(a => {
                                                 const score = data.grades[`${s.id}_${a.id}`];
                                                 return (
-                                                    <td key={a.id} className="p-2 text-center text-slate-600 font-mono text-sm">
+                                                    <td key={a.id} className="p-2 text-center text-slate-400 font-mono text-xs md:text-sm">
                                                         {score !== undefined ? score : '-'}
                                                     </td>
                                                 );
                                             })}
 
-                                            <td className="p-4 text-center text-slate-300 font-mono">
+                                            <td className="p-2 md:p-4 text-center text-slate-300 font-mono text-xs md:text-base">
                                                 {s.originalScore !== null ? s.originalScore.toFixed(1) : '-'}
                                             </td>
-                                            <td className={`p-4 text-center font-black font-mono bg-emerald-500/5 text-lg ${finalColor}`}>
+                                            <td className={`p-2 md:p-4 text-center font-black font-mono bg-emerald-500/5 text-sm md:text-lg ${finalColor}`}>
                                                 {finalScore !== null ? finalScore : '-'}
                                             </td>
                                         </tr>
