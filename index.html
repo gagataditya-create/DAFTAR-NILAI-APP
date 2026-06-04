@@ -304,12 +304,6 @@
                 }
             };
 
-            const handleLoginSubmit = (e) => {
-                e.preventDefault();
-                const profile = teacherProfiles[selectedTeacherId];
-                handleLoginProcess(profile, passInput.toLowerCase());
-            };
-
             const handleLogout = () => {
                 showConfirm("Anda yakin ingin keluar dari sistem?", () => {
                     localStorage.removeItem('seru_active_session_id');
@@ -389,7 +383,10 @@
                 );
             }
 
-            const activeClasses = data.classes.filter(c => c.isActive !== false);
+            const activeClasses = data.classes.filter(c => {
+                if (c[`active_${authUser.id}`] !== undefined) return c[`active_${authUser.id}`];
+                return c.isActive !== false;
+            });
 
             return (
                 <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex flex-col bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
@@ -433,7 +430,7 @@
                         <div className="absolute top-0 left-0 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
                         <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
 
-                        {activeTab === 'dashboard' && <DashboardView data={data} authUser={authUser} showMessage={showMessage} />}
+                        {activeTab === 'dashboard' && <DashboardView data={data} authUser={authUser} showMessage={showMessage} activeClasses={activeClasses} />}
                         {activeTab === 'classes' && <ClassesView data={data} activeClasses={activeClasses} showConfirm={showConfirm} authUser={authUser} />}
                         {activeTab === 'assessments' && <AssessmentsView data={data} authUser={authUser} showConfirm={showConfirm} />}
                         {activeTab === 'input' && <InputMatrixView data={data} authUser={authUser} activeClasses={activeClasses} showMessage={showMessage} />}
@@ -453,7 +450,7 @@
         );
 
         // --- DASHBOARD VIEW ---
-        function DashboardView({ data, authUser, showMessage }) {
+        function DashboardView({ data, authUser, showMessage, activeClasses }) {
             const [pendingChanges, setPendingChanges] = useState({});
             const [isSaving, setIsSaving] = useState(false);
             
@@ -477,7 +474,10 @@
             
             const toggleClassManual = (name) => {
                 const dbClass = data.classes.find(c => c.name === name);
-                const dbStatus = dbClass ? (dbClass.isActive !== false) : false;
+                let dbStatus = false;
+                if (dbClass) {
+                    dbStatus = dbClass[`active_${authUser.id}`] !== undefined ? dbClass[`active_${authUser.id}`] : (dbClass.isActive !== false);
+                }
                 const currentStatus = pendingChanges[name] !== undefined ? pendingChanges[name] : dbStatus;
                 const newStatus = !currentStatus;
 
@@ -495,12 +495,12 @@
                 try {
                     const promises = Object.entries(pendingChanges).map(async ([name, isActive]) => {
                         const target = data.classes.find(c => c.name === name);
-                        if (target) return updateDoc(doc(db, 'classes', target.id), { isActive });
-                        else return addDoc(collection(db, 'classes'), { name, isActive, createdAt: Date.now() });
+                        if (target) return updateDoc(doc(db, 'classes', target.id), { [`active_${authUser.id}`]: isActive });
+                        else return addDoc(collection(db, 'classes'), { name, [`active_${authUser.id}`]: isActive, isActive: true, createdAt: Date.now() });
                     });
                     await Promise.all(promises);
                     setPendingChanges({});
-                    showMessage("Konfigurasi kelas berhasil disimpan!", "Sukses");
+                    showMessage("Konfigurasi kelas personal berhasil disimpan!", "Sukses");
                 } catch (e) { showMessage("Gagal menyimpan: " + e.message, "Error"); }
                 setIsSaving(false);
             };
@@ -519,7 +519,7 @@
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {[
                         { l: 'Total Siswa', v: data.students.length, i: <Users />, color: 'from-blue-500 to-cyan-500' },
-                        { l: 'Kelas Aktif', v: data.classes.filter(c => c.isActive !== false).length, i: <LayoutGrid />, color: 'from-violet-500 to-purple-500' },
+                        { l: 'Kelas Aktif', v: activeClasses.length, i: <LayoutGrid />, color: 'from-violet-500 to-purple-500' },
                         { l: 'Materi Ajar', v: myAssessments.length, i: <BookOpen />, color: 'from-orange-500 to-amber-500' },
                         { l: 'Data Masuk', v: myGradesCount, i: <TrendingUp />, color: 'from-emerald-500 to-green-500' }
                         ].map((s, i) => (
@@ -541,8 +541,8 @@
                             <div className="flex gap-3 items-center">
                                 <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Check size={24}/></div>
                                 <div>
-                                    <h3 className="font-bold text-white text-lg">Panel Kontrol Kelas (Sekolah)</h3>
-                                    <p className="text-xs text-slate-400">Status kelas ini dibagikan ke semua guru. Klik untuk On/Off.</p>
+                                    <h3 className="font-bold text-white text-lg">Panel Kontrol Kelas (Personal)</h3>
+                                    <p className="text-xs text-slate-400">Kelas yang dinyalakan di sini hanya berlaku untuk akun Anda sendiri.</p>
                                 </div>
                             </div>
                             {hasChanges && (
@@ -557,7 +557,10 @@
                             <div key={i} className="grid grid-cols-5 gap-3 md:gap-4">
                             {row.map(nm => {
                                 const dbClass = data.classes.find(c => c.name === nm);
-                                const dbStatus = dbClass ? (dbClass.isActive !== false) : false;
+                                let dbStatus = false;
+                                if (dbClass) {
+                                    dbStatus = dbClass[`active_${authUser.id}`] !== undefined ? dbClass[`active_${authUser.id}`] : (dbClass.isActive !== false);
+                                }
                                 const isActive = pendingChanges[nm] !== undefined ? pendingChanges[nm] : dbStatus;
                                 const isDirty = pendingChanges[nm] !== undefined;
                                 return (
