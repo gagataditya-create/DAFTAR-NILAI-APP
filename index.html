@@ -175,7 +175,11 @@
         }
 
         const addDoc = async (col, data) => {
-            const id = generateId();
+            let id = generateId();
+            if (data._customId) {
+                id = data._customId;
+                delete data._customId;
+            }
             const newItem = { id, ...data };
             LOCAL_DATA[col] = [...(LOCAL_DATA[col]||[]), newItem];
             notifyListeners();
@@ -456,8 +460,9 @@
             // FILTER: Hanya hitung materi & nilai milik guru yang sedang login
             const myAssessments = useMemo(() => {
                 return data.assessments.filter(a => {
-                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
-                    return aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
+                    const parts = a.id.split('-');
+                    const aTeacherId = parts.length === 3 ? parts[1] : 'gagat';
+                    return aTeacherId === authUser.id;
                 });
             }, [data.assessments, authUser.id]);
 
@@ -665,13 +670,11 @@
             // FILTER: Hanya tampilkan materi milik guru yang sedang login & sesuai jenjang terpilih
             const myFilteredAssessments = useMemo(() => {
                 return data.assessments.filter(a => {
-                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
-                    const aGrade = a.teacherId && a.teacherId.includes('|') ? String(a.teacherId.split('|')[1]) : (a.grade ? String(a.grade) : '9');
+                    const parts = a.id.split('-');
+                    const aTeacherId = parts.length === 3 ? parts[1] : 'gagat';
+                    const aGrade = parts.length === 3 ? parts[2] : '9';
                     
-                    const isMine = aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
-                    const isCorrectGrade = aGrade === String(activeGrade);
-                    
-                    return isMine && isCorrectGrade;
+                    return aTeacherId === authUser.id && aGrade === String(activeGrade);
                 });
             }, [data.assessments, authUser.id, activeGrade]);
 
@@ -679,11 +682,10 @@
                 e.preventDefault();
                 if(!title.trim()) return;
                 await addDoc(collection(db, 'assessments'), { 
+                    _customId: generateId() + '-' + authUser.id + '-' + activeGrade,
                     title: title.trim(), 
                     description: desc.trim(), 
                     weight: Number(weight), 
-                    teacherId: authUser.id + '|' + activeGrade, // Kita sisipkan info jenjang (grade) ke ID Guru
-                    grade: activeGrade, // Tetap kita kirim sebagai cadangan
                     createdAt: Date.now() 
                 });
                 setTitle(''); setDesc(''); setWeight(1);
@@ -814,13 +816,11 @@
                 const targetGrade = activeClassObj ? activeClassObj.name.charAt(0) : '9';
                 
                 return data.assessments.filter(a => {
-                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
-                    const aGrade = a.teacherId && a.teacherId.includes('|') ? String(a.teacherId.split('|')[1]) : (a.grade ? String(a.grade) : '9');
+                    const parts = a.id.split('-');
+                    const aTeacherId = parts.length === 3 ? parts[1] : 'gagat';
+                    const aGrade = parts.length === 3 ? parts[2] : '9';
                     
-                    const isMine = aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
-                    const isCorrectGrade = aGrade === String(targetGrade);
-                    
-                    return isMine && isCorrectGrade;
+                    return aTeacherId === authUser.id && aGrade === String(targetGrade);
                 });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId]);
 
@@ -1023,13 +1023,11 @@
                     : selectedJenjang;
                     
                 return data.assessments.filter(a => {
-                    const aTeacherId = a.teacherId ? a.teacherId.split('|')[0] : null;
-                    const aGrade = a.teacherId && a.teacherId.includes('|') ? String(a.teacherId.split('|')[1]) : (a.grade ? String(a.grade) : '9');
+                    const parts = a.id.split('-');
+                    const aTeacherId = parts.length === 3 ? parts[1] : 'gagat';
+                    const aGrade = parts.length === 3 ? parts[2] : '9';
                     
-                    const isMine = aTeacherId === authUser.id || (!a.teacherId && authUser.id === 'gagat');
-                    const isCorrectGrade = aGrade === String(targetGrade);
-                    
-                    return isMine && isCorrectGrade;
+                    return aTeacherId === authUser.id && aGrade === String(targetGrade);
                 });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId, selectedJenjang, viewMode]);
 
