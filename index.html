@@ -81,7 +81,7 @@
         }
 
         // --- KONFIGURASI MULTI-GURU (DENGAN ROLE ADMIN) ---
-        const teacherProfiles = {
+        const FALLBACK_TEACHER_PROFILES = {
             'gagat': {
                 id: 'gagat',
                 name: 'Gagat Aditya Kurniaji, S.Pd',
@@ -120,6 +120,26 @@
         // --- ADAPTOR DATA LOKAL (OFFLINE) ---
         const db = {};
         const LOCAL_STORAGE_KEY = 'seru_local_app_data_v1';
+        const KKM_STORAGE_PREFIX = 'seru_kkm_v1_';
+        const getTeacherKkm = (teacherId) => {
+            try {
+                const saved = localStorage.getItem(`${KKM_STORAGE_PREFIX}${teacherId}`);
+                if (!saved) return { targetMin: 80, targetMax: 95 };
+                const parsed = JSON.parse(saved);
+                return {
+                    targetMin: Number(parsed.targetMin) || 80,
+                    targetMax: Number(parsed.targetMax) || 95,
+                };
+            } catch (e) {
+                return { targetMin: 80, targetMax: 95 };
+            }
+        };
+        const saveTeacherKkm = (teacherId, values) => {
+            localStorage.setItem(`${KKM_STORAGE_PREFIX}${teacherId}`, JSON.stringify({
+                targetMin: Number(values.targetMin) || 0,
+                targetMax: Number(values.targetMax) || 0,
+            }));
+        };
         const SUPABASE_URL = 'https://qtnmvphffxfnwgbkhtwh.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_bbxwugdf_CR019mf5VUUAg_3aGuM8Oj';
         const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -174,6 +194,10 @@
                 Object.entries(row || {}).map(([key, value]) => [toCamelCase(key), value])
             );
 
+            if (normalized.passwordHash === undefined && normalized.password_hash !== undefined) normalized.passwordHash = normalized.password_hash;
+            if (normalized.isAdmin === undefined && normalized.is_admin !== undefined) normalized.isAdmin = normalized.is_admin;
+            if (normalized.themeFrom === undefined && normalized.theme_from !== undefined) normalized.themeFrom = normalized.theme_from;
+            if (normalized.themeTo === undefined && normalized.theme_to !== undefined) normalized.themeTo = normalized.theme_to;
             if (normalized.className === undefined && normalized.class_name !== undefined) normalized.className = normalized.class_name;
             if (normalized.studentName === undefined && normalized.student_name !== undefined) normalized.studentName = normalized.student_name;
             if (normalized.classId === undefined && normalized.class_id !== undefined) normalized.classId = normalized.class_id;
@@ -210,6 +234,20 @@
             }
 
             return normalized;
+        };
+
+        const sha256Hex = async (input) => {
+            const bytes = new TextEncoder().encode(input);
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        const verifyTeacherPassword = async (profile, password) => {
+            if (!profile) return false;
+            if (profile.passwordHash) {
+                return (await sha256Hex(password)) === profile.passwordHash;
+            }
+            return profile.password === password;
         };
 
         const fetchSupabaseData = async (tableName) => {
@@ -275,6 +313,37 @@
             return () => { dataListeners = dataListeners.filter(l => l !== listener); };
         };
 
+        const getTeacherProfiles = async () => {
+            const fallback = FALLBACK_TEACHER_PROFILES;
+            if (!supabase) return fallback;
+
+            try {
+                const rows = await fetchSupabaseData('teachers');
+                if (!Array.isArray(rows) || rows.length === 0) return fallback;
+
+                const merged = { ...fallback };
+                rows.forEach(row => {
+                    const profile = {
+                        id: row.id || row.username || row.name,
+                        name: row.name || row.username || 'Guru',
+                        subject: row.subject || 'Umum',
+                        password: '',
+                        passwordHash: row.passwordHash || null,
+                        isAdmin: Boolean(row.isAdmin),
+                        icon: row.icon ? row.icon : fallback[row.id]?.icon || fallback.gagat.icon,
+                        themeFrom: row.themeFrom || fallback[row.id]?.themeFrom || 'from-indigo-600',
+                        themeTo: row.themeTo || fallback[row.id]?.themeTo || 'to-purple-600',
+                        defaultApiUrl: fallback[row.id]?.defaultApiUrl || fallback.gagat.defaultApiUrl,
+                    };
+                    merged[profile.id] = profile;
+                });
+                return merged;
+            } catch (e) {
+                console.warn('Gagal memuat guru dari Supabase:', e);
+                return fallback;
+            }
+        };
+
         const apiPost = async () => {};
 
         const addDoc = async (col, data) => {
@@ -331,6 +400,7 @@
         // --- MAIN COMPONENT ---
         function ArtGradesApp() {
             const [authUser, setAuthUser] = useState(null);
+            const [teacherProfiles, setTeacherProfiles] = useState(FALLBACK_TEACHER_PROFILES);
             
             // Login States
             const [selectedTeacherId, setSelectedTeacherId] = useState('gagat');
@@ -362,11 +432,20 @@
             };
 
             useEffect(() => {
+                const loadTeachers = async () => {
+                    const profiles = await getTeacherProfiles();
+                    setTeacherProfiles(profiles);
+                };
+                loadTeachers();
+
                 const savedSessionId = localStorage.getItem('seru_active_session_id');
                 if (savedSessionId && teacherProfiles[savedSessionId]) {
-                    // Bypass password check if session exists
                     const profile = teacherProfiles[savedSessionId];
-                    handleLoginProcess(profile, profile.password); 
+                    initDb().then(() => {
+                        setAuthUser(profile);
+                        setActiveTab(profile.isAdmin ? 'settings' : 'dashboard');
+                    });
+                    return;
                 }
             }, []);
 
@@ -389,14 +468,17 @@
                 return () => unsubscribes.forEach(u => u());
             }, [authUser]);
 
-            const handleLoginSubmit = (event) => {
+            const handleLoginSubmit = async (event) => {
                 event.preventDefault();
-                const profile = teacherProfiles[selectedTeacherId];
-                handleLoginProcess(profile, passInput);
+                const profiles = await getTeacherProfiles();
+                setTeacherProfiles(profiles);
+                const profile = profiles[selectedTeacherId];
+                await handleLoginProcess(profile, passInput);
             };
 
             const handleLoginProcess = async (profile, password) => {
-                if (profile && password === profile.password) {
+                const isValid = await verifyTeacherPassword(profile, password);
+                if (profile && isValid) {
                     setIsCheckingLogin(true);
                     setLoginError(false);
                     
@@ -1131,8 +1213,25 @@
             const [selectedClassId, setSelectedClassId] = useState(activeClasses[0]?.id || '');
             const [selectedJenjang, setSelectedJenjang] = useState('9'); // Default kelas 9
             
-            const [targetMin, setTargetMin] = useState(80);
-            const [targetMax, setTargetMax] = useState(95);
+            const [targetMin, setTargetMin] = useState(() => getTeacherKkm(authUser.id).targetMin);
+            const [targetMax, setTargetMax] = useState(() => getTeacherKkm(authUser.id).targetMax);
+
+            useEffect(() => {
+                const saved = getTeacherKkm(authUser.id);
+                setTargetMin(saved.targetMin);
+                setTargetMax(saved.targetMax);
+            }, [authUser.id]);
+
+            const handleKkmChange = (field, value) => {
+                const nextMin = field === 'min' ? Number(value) || 0 : targetMin;
+                const nextMax = field === 'max' ? Number(value) || nextMin : targetMax;
+                const safeMin = Math.min(nextMin, nextMax);
+                const safeMax = Math.max(nextMin, nextMax);
+
+                setTargetMin(safeMin);
+                setTargetMax(safeMax);
+                saveTeacherKkm(authUser.id, { targetMin: safeMin, targetMax: safeMax });
+            };
 
             // FILTER: Tabel rekap menyesuaikan materi dengan jenjang yang dipilih
             const myFilteredAssessments = useMemo(() => {
@@ -1309,15 +1408,16 @@
                         <div className="lg:w-72 flex flex-col gap-6 shrink-0">
                             <div className="bg-[#0b1126] border border-white/10 rounded-2xl p-6 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-16 opacity-10 bg-gradient-to-br from-indigo-500 to-purple-500 blur-2xl"></div>
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Target Rapor (KKM)</h3>
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Target Rapor (KKM Pribadi)</h3>
+                                <p className="text-[11px] text-emerald-300/90 mb-3">KKM ini tersimpan khusus untuk akun {authUser.name.split(',')[0]} dan otomatis dipakai saat Anda membuka rekap.</p>
                                 <div className="space-y-4 relative z-10">
                                     <div>
                                         <label className="text-xs text-slate-500 mb-1 block">Target Min (KKM)</label>
-                                        <input type="number" value={targetMin} onChange={e => setTargetMin(e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
+                                        <input type="number" value={targetMin} onChange={e => handleKkmChange('min', e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-500 mb-1 block">Target Max</label>
-                                        <input type="number" value={targetMax} onChange={e => setTargetMax(e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
+                                        <input type="number" value={targetMax} onChange={e => handleKkmChange('max', e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
                                     </div>
                                 </div>
                             </div>

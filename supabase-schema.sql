@@ -60,12 +60,27 @@ create table if not exists public.grades (
   updated_at timestamptz default now()
 );
 
+create table if not exists public.teachers (
+  id text primary key,
+  username text unique,
+  name text not null,
+  subject text null,
+  password_hash text null,
+  is_admin boolean default false,
+  icon text null,
+  theme_from text null,
+  theme_to text null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 -- Optional: allow reads for anonymous/public access for this demo app.
 -- For production, replace with proper auth policies.
 alter table public.classes enable row level security;
 alter table public.students enable row level security;
 alter table public.assessments enable row level security;
 alter table public.grades enable row level security;
+alter table public.teachers enable row level security;
 
 create policy if not exists "Allow public read/write" on public.classes
   for all using (true) with check (true);
@@ -77,4 +92,7 @@ create policy if not exists "Allow public read/write" on public.assessments
   for all using (true) with check (true);
 
 create policy if not exists "Allow public read/write" on public.grades
+  for all using (true) with check (true);
+
+create policy if not exists "Allow public read/write" on public.teachers
   for all using (true) with check (true);
