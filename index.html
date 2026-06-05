@@ -175,12 +175,13 @@
             }));
         };
         const SUPABASE_URL = 'https://qtnmvphffxfnwgbkhtwh.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_bbxwugdf_CR019mf5VUUAg_3aGuM8Oj';
+        const activeApiKey = 'sb_publishable_bbxwugdf_CR019mf5VUUAg_3aGuM8Oj';
+        const SUPABASE_ANON_KEY = activeApiKey;
 
         const createSupabaseClient = () => {
             try {
                 if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
-                return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                return window.supabase.createClient(SUPABASE_URL, activeApiKey, {
                     auth: { persistSession: false, autoRefreshToken: false }
                 });
             } catch (e) {
