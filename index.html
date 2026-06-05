@@ -301,10 +301,14 @@
 
         const verifyTeacherPassword = async (profile, password) => {
             if (!profile) return false;
-            if (profile.passwordHash) {
-                return (await sha256Hex(password)) === profile.passwordHash;
+            
+            // Pengecekan Khusus untuk Admin (Pak Gagat)
+            if (profile.id === 'gagat') {
+                return password === 'monalisa';
             }
-            return profile.password === password;
+            
+            // Pengecekan untuk guru lainnya
+            return password === 'guru123';
         };
 
         const fetchSupabaseData = async (tableName) => {
