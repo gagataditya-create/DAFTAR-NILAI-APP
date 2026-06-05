@@ -191,7 +191,7 @@
         };
 
         const supabase = createSupabaseClient();
-        let LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
+        let LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {}, teacher_classes: [] };
         let dataListeners = [];
 
         const notifyListeners = () => dataListeners.forEach(fn => fn(LOCAL_DATA));
@@ -212,7 +212,7 @@
             } catch (e) {
                 console.warn('Gagal membaca data lokal:', e);
             }
-            return { classes: [], students: [], assessments: [], grades: {} };
+            return { classes: [], students: [], assessments: [], grades: {}, teacher_classes: [] };
         };
 
         const saveLocalData = (state) => {
@@ -476,7 +476,7 @@
             const [isCheckingLogin, setIsCheckingLogin] = useState(false);
 
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [data, setData] = useState({ classes: [], students: [], assessments: [], grades: {} });
+            const [data, setData] = useState({ classes: [], students: [], assessments: [], grades: {}, teacher_classes: [] });
             
             const [dialogState, setDialogState] = useState({ isOpen: false, config: {} });
 
@@ -529,7 +529,9 @@
                         const map = {};
                         s.docs.forEach(d => { const dt = d.data(); map[`${dt.studentId}_${dt.assessmentId}`] = dt.score; });
                         setData(p => ({ ...p, grades: map }));
-                    })
+                    }),
+                    onSnapshot(query(collection(db, 'teacher_classes')), s => 
+                        setData(p => ({ ...p, teacher_classes: s.docs.map(d => ({ id: d.id, ...d.data() })) })))
                 ];
                 return () => unsubscribes.forEach(u => u());
             }, [authUser]);
@@ -572,7 +574,7 @@
                     localStorage.removeItem('seru_active_session_id');
                     setAuthUser(null);
                     setPassInput('');
-                    LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
+                    LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {}, teacher_classes: [] };
                     saveLocalData(LOCAL_DATA);
                 });
             };
@@ -647,8 +649,8 @@
             }
 
             const activeClasses = data.classes.filter(c => {
-                if (c[`active_${authUser.id}`] !== undefined) return c[`active_${authUser.id}`];
-                return c.isActive !== false;
+                const relation = data.teacher_classes?.find(tc => tc.teacherId === authUser.id && tc.classId === c.id);
+                return relation ? relation.isActive : false;
             });
 
             return (
@@ -739,7 +741,8 @@
                 const dbClass = data.classes.find(c => c.name === name);
                 let dbStatus = false;
                 if (dbClass) {
-                    dbStatus = dbClass[`active_${authUser.id}`] !== undefined ? dbClass[`active_${authUser.id}`] : (dbClass.isActive !== false);
+                    const relation = data.teacher_classes?.find(tc => tc.teacherId === authUser.id && tc.classId === dbClass.id);
+                    dbStatus = relation ? relation.isActive : false;
                 }
                 const currentStatus = pendingChanges[name] !== undefined ? pendingChanges[name] : dbStatus;
                 const newStatus = !currentStatus;
@@ -757,9 +760,16 @@
                 setIsSaving(true);
                 try {
                     const promises = Object.entries(pendingChanges).map(async ([name, isActive]) => {
-                        const target = data.classes.find(c => c.name === name);
-                        if (target) return updateDoc(doc(db, 'classes', target.id), { [`active_${authUser.id}`]: isActive });
-                        else return addDoc(collection(db, 'classes'), { name, [`active_${authUser.id}`]: isActive, isActive: true, createdAt: Date.now() });
+                        let target = data.classes.find(c => c.name === name);
+                        if (!target) {
+                            const newClassRef = await addDoc(collection(db, 'classes'), { name, isActive: true, createdAt: Date.now() });
+                            target = { id: newClassRef.id, name };
+                        }
+                        return syncSupabaseRecord('teacher_classes', {
+                            teacherId: authUser.id,
+                            classId: target.id,
+                            isActive: isActive
+                        }, 'upsert');
                     });
                     await Promise.all(promises);
                     setPendingChanges({});
@@ -822,7 +832,8 @@
                                 const dbClass = data.classes.find(c => c.name === nm);
                                 let dbStatus = false;
                                 if (dbClass) {
-                                    dbStatus = dbClass[`active_${authUser.id}`] !== undefined ? dbClass[`active_${authUser.id}`] : (dbClass.isActive !== false);
+                                    const relation = data.teacher_classes?.find(tc => tc.teacherId === authUser.id && tc.classId === dbClass.id);
+                                    dbStatus = relation ? relation.isActive : false;
                                 }
                                 const isActive = pendingChanges[nm] !== undefined ? pendingChanges[nm] : dbStatus;
                                 const isDirty = pendingChanges[nm] !== undefined;
