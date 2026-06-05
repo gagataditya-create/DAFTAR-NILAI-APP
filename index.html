@@ -41,6 +41,40 @@
 <body class="custom-scrollbar">
     <div id="root"></div>
 
+    <script>
+        (function () {
+            function showFatalError(error) {
+                const root = document.getElementById('root');
+                if (!root) return;
+
+                const message = error && error.message ? error.message : String(error || 'Terjadi kesalahan yang tidak diketahui.');
+                root.innerHTML = `
+                    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#020617 0%,#111827 100%);color:#fff;font-family:Arial,Helvetica,sans-serif;">
+                        <div style="max-width:520px;width:100%;background:rgba(15,23,42,0.92);border:1px solid rgba(148,163,184,0.18);border-radius:24px;padding:28px;box-shadow:0 24px 60px rgba(15,23,42,0.45);">
+                            <p style="text-transform:uppercase;letter-spacing:0.25em;font-size:12px;color:#818cf8;font-weight:700;margin:0 0 8px;">Sistem Penilaian</p>
+                            <h2 style="margin:0 0 10px;font-size:24px;line-height:1.2;">Aplikasi gagal dimuat</h2>
+                            <p style="margin:0 0 14px;color:#cbd5e1;font-size:14px;line-height:1.5;">Halaman ini tidak boleh blank. Silakan cek console browser untuk detailnya.</p>
+                            <pre style="margin:0;padding:14px;border-radius:14px;background:#111827;border:1px solid rgba(99,102,241,0.25);color:#f8fafc;font-size:12px;white-space:pre-wrap;word-break:break-word;">${message}</pre>
+                            <p style="margin-top:14px;font-size:12px;color:#94a3b8;">Jika masalah berlanjut, coba refresh halaman atau cek koneksi ke CDN eksternal.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            window.__showFatalError = showFatalError;
+
+            window.addEventListener('error', (event) => {
+                const error = event.error || new Error(event.message || 'Runtime error');
+                showFatalError(error);
+            });
+
+            window.addEventListener('unhandledrejection', (event) => {
+                const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason || 'Unhandled promise rejection'));
+                showFatalError(error);
+            });
+        })();
+    </script>
+
     <!-- 4. KODE UTAMA APLIKASI -->
     <script type="text/babel" data-type="module" data-presets="react">
         import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -1712,8 +1746,14 @@
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ArtGradesApp />);
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<ArtGradesApp />);
+        } catch (error) {
+            if (window.__showFatalError) {
+                window.__showFatalError(error);
+            }
+        }
     </script>
 </body>
 </html>
