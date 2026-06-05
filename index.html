@@ -765,13 +765,28 @@
                             const newClassRef = await addDoc(collection(db, 'classes'), { name, isActive: true, createdAt: Date.now() });
                             target = { id: newClassRef.id, name };
                         }
-                        return syncSupabaseRecord('teacher_classes', {
-                            teacherId: authUser.id,
-                            classId: target.id,
-                            isActive: isActive
-                        }, 'upsert');
+                        
+                        // 1. Eksekusi aman ke Supabase dengan aturan Kunci Ganda
+                        if (supabase) {
+                            await supabase.from('teacher_classes').upsert({
+                                teacher_id: authUser.id,
+                                class_id: target.id,
+                                is_active: isActive
+                            }, { onConflict: 'teacher_id,class_id' });
+                        }
+                        
+                        // 2. Simpan paksa ke memori lokal agar layar langsung mengunci pilihan
+                        const existingIdx = LOCAL_DATA.teacher_classes.findIndex(tc => tc.teacherId === authUser.id && tc.classId === target.id);
+                        if (existingIdx >= 0) {
+                            LOCAL_DATA.teacher_classes[existingIdx].isActive = isActive;
+                        } else {
+                            LOCAL_DATA.teacher_classes.push({ id: `${authUser.id}_${target.id}`, teacherId: authUser.id, classId: target.id, isActive: isActive });
+                        }
                     });
+                    
                     await Promise.all(promises);
+                    saveLocalData(LOCAL_DATA);
+                    notifyListeners(); // Paksa layar untuk refresh data terbaru
                     setPendingChanges({});
                     showMessage("Konfigurasi kelas personal berhasil disimpan!", "Sukses");
                 } catch (e) { showMessage("Gagal menyimpan: " + e.message, "Error"); }
