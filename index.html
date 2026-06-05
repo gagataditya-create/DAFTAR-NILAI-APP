@@ -26,6 +26,8 @@
 
     <!-- 3. BABEL -->
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
+    <!-- 4. SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- STYLE TAMBAHAN -->
     <style>
@@ -115,64 +117,165 @@
             }
         };
 
-        // --- ADAPTOR GOOGLE SHEETS ---
-        const db = {}; 
+        // --- ADAPTOR DATA LOKAL (OFFLINE) ---
+        const db = {};
+        const LOCAL_STORAGE_KEY = 'seru_local_app_data_v1';
+        const SUPABASE_URL = 'https://qtnmvphffxfnwgbkhtwh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_bbxwugdf_CR019mf5VUUAg_3aGuM8Oj';
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
         let LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
         let dataListeners = [];
-        let activeApiKey = "";
 
         const notifyListeners = () => dataListeners.forEach(fn => fn(LOCAL_DATA));
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
-        const initDb = async (apiUrl) => {
-            if(!apiUrl || !apiUrl.startsWith('http')) return false;
-            activeApiKey = apiUrl;
+        const loadLocalData = () => {
             try {
-                const res = await fetch(apiUrl);
-                const json = await res.json();
-                if(json) {
-                    LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {}, ...json };
-                    notifyListeners();
-                    return true;
+                const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    return {
+                        classes: Array.isArray(parsed.classes) ? parsed.classes : [],
+                        students: Array.isArray(parsed.students) ? parsed.students : [],
+                        assessments: Array.isArray(parsed.assessments) ? parsed.assessments : [],
+                        grades: parsed.grades && typeof parsed.grades === 'object' ? parsed.grades : {}
+                    };
                 }
-            } catch(e) { console.error("Error fetching", e); return false; }
-            return false;
-        }
+            } catch (e) {
+                console.warn('Gagal membaca data lokal:', e);
+            }
+            return { classes: [], students: [], assessments: [], grades: {} };
+        };
+
+        const saveLocalData = (state) => {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('Gagal menyimpan data lokal:', e);
+            }
+        };
+
+        const initDb = async () => {
+            LOCAL_DATA = loadLocalData();
+            notifyListeners();
+            return true;
+        };
 
         const collection = (db, name) => name;
         const doc = (db, col, id) => ({ col, id });
         const query = (col, ...args) => col;
         const orderBy = (field) => field;
 
+        const toCamelCase = (key) => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+        const toSnakeCase = (key) => key.replace(/([A-Z])/g, '_$1').toLowerCase();
+
+        const normalizeRow = (row) => {
+            const normalized = Object.fromEntries(
+                Object.entries(row || {}).map(([key, value]) => [toCamelCase(key), value])
+            );
+
+            if (normalized.className === undefined && normalized.class_name !== undefined) normalized.className = normalized.class_name;
+            if (normalized.studentName === undefined && normalized.student_name !== undefined) normalized.studentName = normalized.student_name;
+            if (normalized.classId === undefined && normalized.class_id !== undefined) normalized.classId = normalized.class_id;
+            if (normalized.maxScore === undefined && normalized.max_score !== undefined) normalized.maxScore = normalized.max_score;
+            if (normalized.createdAt === undefined && normalized.created_at !== undefined) normalized.createdAt = normalized.created_at;
+            if (normalized.updatedAt === undefined && normalized.updated_at !== undefined) normalized.updatedAt = normalized.updated_at;
+            if (normalized.title === undefined && normalized.assessment_title !== undefined) normalized.title = normalized.assessment_title;
+            if (normalized.name === undefined && normalized.className !== undefined) normalized.name = normalized.className;
+            if (normalized.name === undefined && normalized.studentName !== undefined) normalized.name = normalized.studentName;
+
+            return normalized;
+        };
+
+        const normalizePayload = (payload, tableName) => {
+            const normalized = Object.fromEntries(
+                Object.entries(payload || {}).map(([key, value]) => [toSnakeCase(key), value])
+            );
+
+            if (tableName === 'classes' && Object.prototype.hasOwnProperty.call(payload, 'name')) {
+                normalized.class_name = normalized.name;
+                delete normalized.name;
+            }
+            if (tableName === 'students' && Object.prototype.hasOwnProperty.call(payload, 'name')) {
+                normalized.student_name = normalized.name;
+                delete normalized.name;
+            }
+            if (tableName === 'students' && Object.prototype.hasOwnProperty.call(payload, 'classId')) {
+                normalized.class_id = normalized.class_id ?? normalized.classid;
+                delete normalized.classid;
+            }
+            if (tableName === 'assessments' && Object.prototype.hasOwnProperty.call(payload, 'maxScore')) {
+                normalized.max_score = normalized.max_score ?? normalized.maxscore;
+                delete normalized.maxscore;
+            }
+
+            return normalized;
+        };
+
+        const fetchSupabaseData = async (tableName) => {
+            if (!supabase) return null;
+            const { data, error } = await supabase.from(tableName).select('*');
+            if (error) {
+                console.warn('Supabase fetch failed for', tableName, error);
+                return null;
+            }
+            return (data || []).map(row => normalizeRow(row));
+        };
+
+        const syncSupabaseRecord = async (tableName, record, mode = 'upsert') => {
+            if (!supabase) return null;
+            const payload = normalizePayload(record, tableName);
+            if (mode === 'delete') {
+                return supabase.from(tableName).delete().eq('id', record.id);
+            }
+            if (mode === 'update' && record.id) {
+                return supabase.from(tableName).update(payload).eq('id', record.id);
+            }
+            return supabase.from(tableName).upsert([payload]).select('*').single();
+        };
+
         const onSnapshot = (col, callback) => {
-            const listener = (state) => {
-                if(col === 'grades') {
-                    const docs = Object.entries(state.grades).map(([id, score]) => {
+            const tableName = typeof col === 'string' ? col : col.table || col;
+            const listener = async (state) => {
+                if (tableName === 'grades') {
+                    const docs = Object.entries(state.grades || {}).map(([id, score]) => {
                         const [studentId, assessmentId] = id.split('_');
                         return { data: () => ({ studentId, assessmentId, score }) };
                     });
                     callback({ docs });
-                } else {
-                    const docs = (state[col] || []).map(item => ({ id: item.id, data: () => item }));
-                    callback({ docs });
+                    return;
                 }
-            };
-            dataListeners.push(listener);
-            listener(LOCAL_DATA); 
-            return () => { dataListeners = dataListeners.filter(l => l !== listener) };
-        }
 
-        const apiPost = async (payload) => {
-           if(!activeApiKey || !activeApiKey.startsWith('http')) return;
-           try {
-               await fetch(activeApiKey, { 
-                   method: 'POST', 
-                   mode: 'no-cors',
-                   headers: { 'Content-Type': 'text/plain' },
-                   body: JSON.stringify(payload) 
-               });
-           } catch(e) { console.error("Gagal sinkronisasi:", e); }
-        }
+                const supabaseData = await fetchSupabaseData(tableName);
+                if (supabaseData && supabaseData.length >= 0) {
+                    const docs = supabaseData.map(item => ({ id: item.id, data: () => item }));
+                    callback({ docs });
+                    return;
+                }
+
+                const docs = (state[tableName] || []).map(item => ({ id: item.id, data: () => item }));
+                callback({ docs });
+            };
+
+            dataListeners.push(listener);
+            listener(LOCAL_DATA);
+
+            if (supabase) {
+                const channel = supabase.channel(`sync:${tableName}`);
+                channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
+                    listener(LOCAL_DATA);
+                });
+                channel.subscribe();
+                return () => {
+                    dataListeners = dataListeners.filter(l => l !== listener);
+                    supabase.removeChannel(channel);
+                };
+            }
+
+            return () => { dataListeners = dataListeners.filter(l => l !== listener); };
+        };
+
+        const apiPost = async () => {};
 
         const addDoc = async (col, data) => {
             let id = generateId();
@@ -181,8 +284,10 @@
                 delete data._customId;
             }
             const newItem = { id, ...data };
-            LOCAL_DATA[col] = [...(LOCAL_DATA[col]||[]), newItem];
+            LOCAL_DATA[col] = [...(LOCAL_DATA[col] || []), newItem];
+            saveLocalData(LOCAL_DATA);
             notifyListeners();
+            await syncSupabaseRecord(col, newItem, 'upsert').catch(() => {});
             await apiPost({ action: 'create', table: col, data: newItem });
             return { id };
         }
@@ -190,18 +295,23 @@
         const updateDoc = async (docRef, data) => {
             const col = docRef.col;
             LOCAL_DATA[col] = LOCAL_DATA[col].map(item => item.id === docRef.id ? { ...item, ...data } : item);
+            saveLocalData(LOCAL_DATA);
             notifyListeners();
+            await syncSupabaseRecord(col, { id: docRef.id, ...data }, 'update').catch(() => {});
             await apiPost({ action: 'update', table: col, data: { id: docRef.id, ...data } });
         }
 
         const deleteDoc = async (docRef) => {
-            if(docRef.col === 'grades') {
+            if (docRef.col === 'grades') {
                 const id = docRef.id;
                 delete LOCAL_DATA.grades[id];
-                const [studentId, assessmentId] = id.split('_');
-                await apiPost({ action: 'deleteGrade', table: 'grades', data: { studentId, assessmentId } });
+                saveLocalData(LOCAL_DATA);
+                await syncSupabaseRecord('grades', { id }, 'delete').catch(() => {});
+                await apiPost({ action: 'deleteGrade', table: 'grades', data: { id } });
             } else {
                 LOCAL_DATA[docRef.col] = LOCAL_DATA[docRef.col].filter(item => item.id !== docRef.id);
+                saveLocalData(LOCAL_DATA);
+                await syncSupabaseRecord(docRef.col, { id: docRef.id }, 'delete').catch(() => {});
                 await apiPost({ action: 'delete', table: docRef.col, data: { id: docRef.id } });
             }
             notifyListeners();
@@ -211,7 +321,9 @@
              if(docRef.col === 'grades') {
                  const id = docRef.id;
                  LOCAL_DATA.grades[id] = data.score;
+                 saveLocalData(LOCAL_DATA);
                  notifyListeners();
+                 await syncSupabaseRecord('grades', { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt }, 'upsert').catch(() => {});
                  await apiPost({ action: 'setGrade', table: 'grades', data: { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt } });
              }
         }
@@ -277,15 +389,18 @@
                 return () => unsubscribes.forEach(u => u());
             }, [authUser]);
 
+            const handleLoginSubmit = (event) => {
+                event.preventDefault();
+                const profile = teacherProfiles[selectedTeacherId];
+                handleLoginProcess(profile, passInput);
+            };
+
             const handleLoginProcess = async (profile, password) => {
                 if (profile && password === profile.password) {
                     setIsCheckingLogin(true);
                     setLoginError(false);
                     
-                    const customApi = localStorage.getItem(`seru_api_${profile.id}`);
-                    const apiUrl = customApi || profile.defaultApiUrl;
-                    
-                    const success = await initDb(apiUrl);
+                    const success = await initDb();
                     
                     if (success) {
                         localStorage.setItem('seru_active_session_id', profile.id);
@@ -310,13 +425,13 @@
                     setAuthUser(null);
                     setPassInput('');
                     LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
-                    activeApiKey = "";
+                    saveLocalData(LOCAL_DATA);
                 });
             };
 
             if (!authUser) {
                 return (
-                    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] font-sans">
+                    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans">
                         <CustomDialog isOpen={dialogState.isOpen} config={dialogState.config} onClose={handleDialogClose} />
                         <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-300">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -389,7 +504,7 @@
             });
 
             return (
-                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex flex-col bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex flex-col">
                     <CustomDialog isOpen={dialogState.isOpen} config={dialogState.config} onClose={handleDialogClose} />
                     
                     <header className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40 px-6 py-4 shadow-2xl">
@@ -1297,20 +1412,13 @@
                 );
             }
 
-            const handleSaveUrl = () => {
-                localStorage.setItem(`seru_api_${authUser.id}`, urlInput.trim());
-                localStorage.setItem('seru_master_sheet_url', sheetUrl.trim());
-                showMessage("Konfigurasi URL Spreadsheet disimpan! Memuat ulang sistem...", "Tersimpan");
-                setTimeout(() => window.location.reload(), 2000);
-            };
-
-            const handleResetUrl = () => {
-                showConfirm("Kembalikan ke URL default? (Database bawaan aplikasi)", () => {
-                    localStorage.removeItem(`seru_api_${authUser.id}`);
-                    showMessage("Dikembalikan ke default. Memuat ulang sistem...", "Reset Selesai");
-                    setTimeout(() => window.location.reload(), 2000);
+            const handleResetLocalData = () => {
+                showConfirm("Hapus semua data lokal yang tersimpan di browser ini?", () => {
+                    localStorage.removeItem('seru_local_app_data_v1');
+                    showMessage("Data lokal berhasil dibersihkan. Halaman akan dimuat ulang.", "Reset Selesai");
+                    setTimeout(() => window.location.reload(), 1000);
                 });
-            }
+            };
 
             const handleImport = async () => {
                 if (!txt.trim()) return;
@@ -1393,7 +1501,7 @@
                             localStudentsTrack.add(studentKey);
                             count++;
                             
-                            setTxt(`MEMPROSES PENYIMPANAN KE GOOGLE SHEET...\nSedang menyimpan: ${count} dari ${studentsToAdd.length} siswa.\n\nMohon tunggu sampai selesai (jangan tutup halaman ini)...`);
+                            setTxt(`MEMPROSES PENYIMPANAN LOKAL...\nSedang menyimpan: ${count} dari ${studentsToAdd.length} siswa.\n\nData ini disimpan di browser Anda, bukan di sheet atau firebase...`);
                             await new Promise(resolve => setTimeout(resolve, 350));
                         }
                     }
@@ -1412,32 +1520,20 @@
                 <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in pt-8">
                     <div className="border-b border-white/5 pb-6">
                         <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Settings className="text-indigo-400" /> Ruang Admin</h2>
-                        <p className="text-slate-400 mt-1">Konfigurasi koneksi Database dan Manajemen Master Data Siswa Sekolah.</p>
+                        <p className="text-slate-400 mt-1">Mode offline: semua data disimpan di browser Anda dan tidak terhubung ke sheet, firebase, atau layanan eksternal.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
-                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Database Sentral</h3>
+                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Mode Offline</h3>
                             
                             <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl text-sm text-indigo-200">
-                                Ini adalah URL Spreadsheet utama tempat menyimpan data siswa secara permanen agar dapat diakses semua guru.
-                            </div>
-                            
-                            <div>
-                                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Web App URL (Google Apps Script)</label>
-                                <input 
-                                    type="text" 
-                                    value={urlInput} 
-                                    onChange={e => setUrlInput(e.target.value)} 
-                                    placeholder="https://script.google.com/macros/s/.../exec" 
-                                    className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white outline-none focus:border-indigo-500 font-mono text-sm" 
-                                />
+                                Aplikasi ini berjalan sepenuhnya dari browser Anda. Data siswa, materi, dan nilai disimpan di localStorage perangkat ini, tanpa koneksi ke sheet atau firebase.
                             </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <button onClick={handleSaveUrl} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 flex-1 shadow-lg shadow-indigo-500/25 transition-all">Simpan URL</button>
-                                <button onClick={handleResetUrl} className="bg-slate-800 text-slate-300 px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition-all">Reset</button>
-                            </div>
+                            <button onClick={handleResetLocalData} className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all">
+                                <Trash2 size={18} /> HAPUS DATA LOKAL
+                            </button>
                         </div>
 
                         <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
@@ -1452,20 +1548,9 @@
                             </button>
 
                             <div className="pt-4 border-t border-white/10 mt-4">
-                                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Link Google Sheet Master (Opsional)</label>
-                                <input 
-                                    type="text" 
-                                    value={sheetUrl} 
-                                    onChange={e => setSheetUrl(e.target.value)} 
-                                    placeholder="https://docs.google.com/spreadsheets/d/..." 
-                                    className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-emerald-500 font-mono text-sm mb-3" 
-                                />
-                                <button 
-                                    onClick={() => sheetUrl ? window.open(sheetUrl, '_blank') : showMessage('Silakan cari dan tempelkan link Google Sheet Anda di kolom atas terlebih dahulu, lalu klik Simpan URL Baru.', 'Link Belum Diisi')} 
-                                    className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all"
-                                >
-                                    <FileSpreadsheet size={18} /> BUKA SPREADSHEET MASTER
-                                </button>
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-sm text-emerald-200">
+                                    Anda tetap bisa mengimpor daftar siswa dari Excel, lalu data tersebut akan tersimpan secara lokal di browser ini.
+                                </div>
                             </div>
                         </div>
                     </div>
