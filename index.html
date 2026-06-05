@@ -142,7 +142,20 @@
         };
         const SUPABASE_URL = 'https://qtnmvphffxfnwgbkhtwh.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_bbxwugdf_CR019mf5VUUAg_3aGuM8Oj';
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        const createSupabaseClient = () => {
+            try {
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
+                return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+            } catch (e) {
+                console.warn('Gagal membuat Supabase client:', e);
+                return null;
+            }
+        };
+
+        const supabase = createSupabaseClient();
         let LOCAL_DATA = { classes: [], students: [], assessments: [], grades: {} };
         let dataListeners = [];
 
@@ -198,9 +211,18 @@
             if (normalized.isAdmin === undefined && normalized.is_admin !== undefined) normalized.isAdmin = normalized.is_admin;
             if (normalized.themeFrom === undefined && normalized.theme_from !== undefined) normalized.themeFrom = normalized.theme_from;
             if (normalized.themeTo === undefined && normalized.theme_to !== undefined) normalized.themeTo = normalized.theme_to;
+            if (normalized.passwordHash === undefined && normalized.password_hash !== undefined) normalized.passwordHash = normalized.password_hash;
+            if (normalized.isAdmin === undefined && normalized.is_admin !== undefined) normalized.isAdmin = normalized.is_admin;
+            if (normalized.themeFrom === undefined && normalized.theme_from !== undefined) normalized.themeFrom = normalized.theme_from;
+            if (normalized.themeTo === undefined && normalized.theme_to !== undefined) normalized.themeTo = normalized.theme_to;
             if (normalized.className === undefined && normalized.class_name !== undefined) normalized.className = normalized.class_name;
             if (normalized.studentName === undefined && normalized.student_name !== undefined) normalized.studentName = normalized.student_name;
             if (normalized.classId === undefined && normalized.class_id !== undefined) normalized.classId = normalized.class_id;
+            if (normalized.studentId === undefined && normalized.student_id !== undefined) normalized.studentId = normalized.student_id;
+            if (normalized.assessmentId === undefined && normalized.assessment_id !== undefined) normalized.assessmentId = normalized.assessment_id;
+            if (normalized.teacherId === undefined && normalized.teacher_id !== undefined) normalized.teacherId = normalized.teacher_id;
+            if (normalized.subjectId === undefined && normalized.subject_id !== undefined) normalized.subjectId = normalized.subject_id;
+            if (normalized.assessmentType === undefined && normalized.assessment_type !== undefined) normalized.assessmentType = normalized.assessment_type;
             if (normalized.maxScore === undefined && normalized.max_score !== undefined) normalized.maxScore = normalized.max_score;
             if (normalized.createdAt === undefined && normalized.created_at !== undefined) normalized.createdAt = normalized.created_at;
             if (normalized.updatedAt === undefined && normalized.updated_at !== undefined) normalized.updatedAt = normalized.updated_at;
@@ -251,13 +273,18 @@
         };
 
         const fetchSupabaseData = async (tableName) => {
-            if (!supabase) return null;
-            const { data, error } = await supabase.from(tableName).select('*');
-            if (error) {
-                console.warn('Supabase fetch failed for', tableName, error);
-                return null;
+            if (!supabase) return [];
+            try {
+                const { data, error } = await supabase.from(tableName).select('*');
+                if (error) {
+                    console.warn('Supabase fetch failed for', tableName, error);
+                    return [];
+                }
+                return (data || []).map(row => normalizeRow(row));
+            } catch (e) {
+                console.warn('Supabase fetch threw for', tableName, e);
+                return [];
             }
-            return (data || []).map(row => normalizeRow(row));
         };
 
         const syncSupabaseRecord = async (tableName, record, mode = 'upsert') => {
@@ -299,15 +326,19 @@
             listener(LOCAL_DATA);
 
             if (supabase) {
-                const channel = supabase.channel(`sync:${tableName}`);
-                channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
-                    listener(LOCAL_DATA);
-                });
-                channel.subscribe();
-                return () => {
-                    dataListeners = dataListeners.filter(l => l !== listener);
-                    supabase.removeChannel(channel);
-                };
+                try {
+                    const channel = supabase.channel(`sync:${tableName}`);
+                    channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
+                        listener(LOCAL_DATA);
+                    });
+                    channel.subscribe();
+                    return () => {
+                        dataListeners = dataListeners.filter(l => l !== listener);
+                        supabase.removeChannel(channel);
+                    };
+                } catch (e) {
+                    console.warn('Realtime subscribe failed for', tableName, e);
+                }
             }
 
             return () => { dataListeners = dataListeners.filter(l => l !== listener); };
