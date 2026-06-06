@@ -1347,15 +1347,15 @@
                 setTargetMax(saved.targetMax);
             }, [authUser.id]);
 
-            const handleKkmChange = (field, value) => {
-                const nextMin = field === 'min' ? Number(value) || 0 : targetMin;
-                const nextMax = field === 'max' ? Number(value) || nextMin : targetMax;
-                const safeMin = Math.min(nextMin, nextMax);
-                const safeMax = Math.max(nextMin, nextMax);
-
-                setTargetMin(safeMin);
-                setTargetMax(safeMax);
-                saveTeacherKkm(authUser.id, { targetMin: safeMin, targetMax: safeMax });
+           const handleKkmChange = (field, value) => {
+                // Copot mesin pengaman agresif agar tidak konslet saat mengetik mundur/menghapus
+                if (field === 'min') {
+                    setTargetMin(value);
+                    saveTeacherKkm(authUser.id, { targetMin: value, targetMax: targetMax });
+                } else {
+                    setTargetMax(value);
+                    saveTeacherKkm(authUser.id, { targetMin: targetMin, targetMax: value });
+                }
             };
 
             // FILTER: Tabel rekap menyesuaikan materi dengan jenjang yang dipilih
