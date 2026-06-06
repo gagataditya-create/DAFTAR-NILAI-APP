@@ -424,6 +424,8 @@
                         themeFrom: row.themeFrom || fallback[row.id]?.themeFrom || 'from-indigo-600',
                         themeTo: row.themeTo || fallback[row.id]?.themeTo || 'to-purple-600',
                         defaultApiUrl: fallback[row.id]?.defaultApiUrl || fallback.gagat.defaultApiUrl,
+                        targetMin: row.target_min !== undefined ? row.target_min : 80,
+                        targetMax: row.target_max !== undefined ? row.target_max : 95,
                     };
                     merged[profile.id] = profile;
                 });
@@ -1365,23 +1367,37 @@
             const [selectedClassId, setSelectedClassId] = useState(activeClasses[0]?.id || '');
             const [selectedJenjang, setSelectedJenjang] = useState('9'); // Default kelas 9
             
-            const [targetMin, setTargetMin] = useState(() => getTeacherKkm(authUser.id).targetMin);
-            const [targetMax, setTargetMax] = useState(() => getTeacherKkm(authUser.id).targetMax);
+            const [targetMin, setTargetMin] = useState(authUser.targetMin || 80);
+            const [targetMax, setTargetMax] = useState(authUser.targetMax || 95);
 
             useEffect(() => {
-                const saved = getTeacherKkm(authUser.id);
-                setTargetMin(saved.targetMin);
-                setTargetMax(saved.targetMax);
-            }, [authUser.id]);
+                setTargetMin(authUser.targetMin || 80);
+                setTargetMax(authUser.targetMax || 95);
+            }, [authUser]);
 
-           const handleKkmChange = (field, value) => {
-                // Copot mesin pengaman agresif agar tidak konslet saat mengetik mundur/menghapus
+            const handleKkmChange = async (field, value) => {
+                let newMin = targetMin;
+                let newMax = targetMax;
+
                 if (field === 'min') {
-                    setTargetMin(value);
-                    saveTeacherKkm(authUser.id, { targetMin: value, targetMax: targetMax });
+                    newMin = value;
+                    setTargetMin(newMin);
                 } else {
-                    setTargetMax(value);
-                    saveTeacherKkm(authUser.id, { targetMin: targetMin, targetMax: value });
+                    newMax = value;
+                    setTargetMax(newMax);
+                }
+
+                // Update memori lokal sebagai cadangan
+                saveTeacherKkm(authUser.id, { targetMin: newMin, targetMax: newMax });
+                authUser.targetMin = Number(newMin);
+                authUser.targetMax = Number(newMax);
+
+                // Kirim langsung ke Gudang Supabase agar HP dan Chromebook tersinkronisasi
+                if (supabase) {
+                    await supabase.from('teachers').update({
+                        target_min: Number(newMin),
+                        target_max: Number(newMax)
+                    }).eq('id', authUser.id);
                 }
             };
 
@@ -1432,15 +1448,28 @@
                 return displayedStudents.map(s => ({ ...s, originalScore: getOriginalScore(s.id) }));
             }, [displayedStudents, data.grades, myFilteredAssessments]);
 
-            // Cari nilai Min & Max Aktual berdasarkan skup (kelas/jenjang)
+            // PUSAT LOGIKA KONVERSI PARALEL (HANYA MENGGUNAKAN JENJANG/ANGKATAN)
             const { actualMin, actualMax } = useMemo(() => {
-                const validScores = studentsWithOriginal.map(s => s.originalScore).filter(val => val !== null);
-                if (validScores.length === 0) return { actualMin: 0, actualMax: 0 };
+                // 1. Tentukan jenjang apa yang sedang dibuka (contoh: '8')
+                const targetGrade = viewMode === 'class' 
+                    ? (activeClasses.find(c => c.id === selectedClassId)?.name.charAt(0) || '9') 
+                    : selectedJenjang;
+
+                // 2. Kumpulkan SEMUA siswa di seluruh kelas pada jenjang tersebut (Paralel)
+                const jenjangClassIds = activeClasses.filter(c => c.name.startsWith(targetGrade)).map(c => c.id);
+                const jenjangStudents = data.students.filter(s => jenjangClassIds.includes(s.classId));
+
+                // 3. Hitung nilai asli (original) dari populasi seluruh siswa paralel
+                const jenjangScores = jenjangStudents.map(s => getOriginalScore(s.id)).filter(val => val !== null);
+                
+                if (jenjangScores.length === 0) return { actualMin: 0, actualMax: 0 };
+                
+                // 4. Tetapkan Min dan Max Aktual dari populasi PARALEL (sehingga konversi adil 1 angkatan)
                 return {
-                    actualMin: Math.min(...validScores),
-                    actualMax: Math.max(...validScores)
+                    actualMin: Math.min(...jenjangScores),
+                    actualMax: Math.max(...jenjangScores)
                 };
-            }, [studentsWithOriginal]);
+            }, [data.students, activeClasses, selectedClassId, selectedJenjang, viewMode, myFilteredAssessments, data.grades]);
 
             // Rumus Konversi
             const convertScore = (original) => {
