@@ -339,43 +339,37 @@
         };
 
         const listener = async (state) => {
-                    const supabaseData = await fetchSupabaseData(tableName);
-                    
-                    if (supabaseData && supabaseData.length >= 0) {
-                        // Khusus tabel grades, paksa Supabase sinkron dengan memori lokal HP/TV
-                        if (tableName === 'grades') {
-                            const newGrades = {};
-                            supabaseData.forEach(item => {
-                                newGrades[`${item.studentId}_${item.assessmentId}`] = item.score;
-                            });
-                            LOCAL_DATA.grades = Object.assign(LOCAL_DATA.grades || {}, newGrades);
-                            saveLocalData(LOCAL_DATA);
-                            
-                            const docs = Object.entries(LOCAL_DATA.grades).map(([id, score]) => {
-                                const [studentId, assessmentId] = id.split('_');
-                                return { data: () => ({ studentId, assessmentId, score }) };
-                            });
-                            callback({ docs });
-                            return;
-                        }
-                        
-                        const docs = supabaseData.map(item => ({ id: item.id, data: () => item }));
-                        callback({ docs });
-                        return;
-                    }
-
-                    // Fallback jika koneksi internet terputus
+                const supabaseData = await fetchSupabaseData(tableName);
+                
+                if (supabaseData && supabaseData.length >= 0) {
+                    // Khusus tabel grades, paksa Supabase sinkron dengan memori lokal HP/TV
                     if (tableName === 'grades') {
-                        const docs = Object.entries(state.grades || {}).map(([id, score]) => {
+                        const newGrades = {};
+                        supabaseData.forEach(item => {
+                            newGrades[`${item.studentId}_${item.assessmentId}`] = item.score;
+                        });
+                        LOCAL_DATA.grades = Object.assign(LOCAL_DATA.grades || {}, newGrades);
+                        saveLocalData(LOCAL_DATA);
+                        
+                        const docs = Object.entries(LOCAL_DATA.grades).map(([id, score]) => {
                             const [studentId, assessmentId] = id.split('_');
                             return { data: () => ({ studentId, assessmentId, score }) };
                         });
                         callback({ docs });
                         return;
                     }
-                };
-                if (supabaseData && supabaseData.length >= 0) {
+                    
                     const docs = supabaseData.map(item => ({ id: item.id, data: () => item }));
+                    callback({ docs });
+                    return;
+                }
+
+                // Fallback jika koneksi internet terputus atau data lokal
+                if (tableName === 'grades') {
+                    const docs = Object.entries(state.grades || {}).map(([id, score]) => {
+                        const [studentId, assessmentId] = id.split('_');
+                        return { data: () => ({ studentId, assessmentId, score }) };
+                    });
                     callback({ docs });
                     return;
                 }
