@@ -984,6 +984,8 @@
                 await addDoc(collection(db, 'assessments'), { 
                     _customId: generateId() + '-' + authUser.id + '-' + activeGrade,
                     title: title.trim(), 
+                    assessment_title: title.trim(), // Jaga-jaga untuk kolom gembok Supabase versi lama
+                    teacher_id: authUser.id, // Memastikan data kepemilikan guru tidak ditolak Supabase
                     description: desc.trim(), 
                     weight: Number(weight), 
                     createdAt: Date.now() 
@@ -1004,6 +1006,7 @@
                 if(!editForm.title.trim()) return;
                 await updateDoc(doc(db, 'assessments', editingId), {
                     title: editForm.title.trim(),
+                    assessment_title: editForm.title.trim(), // Pembaruan nama kolom lama
                     description: editForm.desc.trim(),
                     weight: Number(editForm.weight)
                 });
