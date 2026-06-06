@@ -978,14 +978,36 @@
                 });
             }, [data.assessments, authUser.id, activeGrade]);
 
-            const handleAdd = async (e) => {
+         const handleAdd = async (e) => {
                 e.preventDefault();
                 if(!title.trim()) return;
+
+                const customId = generateId() + '-' + authUser.id + '-' + activeGrade;
+
+                // PENGAMAN & ALARM ERROR: Kita ketuk pintu Supabase secara langsung terlebih dahulu
+                if (supabase) {
+                    const { error } = await supabase.from('assessments').insert([{
+                        id: customId,
+                        title: title.trim(),
+                        assessment_title: title.trim(),
+                        teacher_id: authUser.id,
+                        description: desc.trim(),
+                        weight: Number(weight)
+                    }]);
+
+                    // Jika Supabase menolak, hentikan proses dan tampilkan alasannya ke layar Pak Gagat!
+                    if (error) {
+                        showMessage("ALASAN PENOLAKAN SUPABASE: " + error.message, "Gagal Tersimpan di Gudang");
+                        return; 
+                    }
+                }
+
+                // Jika sukses diterima Supabase, baru kita simpan di layar
                 await addDoc(collection(db, 'assessments'), { 
-                    _customId: generateId() + '-' + authUser.id + '-' + activeGrade,
+                    _customId: customId,
                     title: title.trim(), 
-                    assessment_title: title.trim(), // Jaga-jaga untuk kolom gembok Supabase versi lama
-                    teacher_id: authUser.id, // Memastikan data kepemilikan guru tidak ditolak Supabase
+                    assessment_title: title.trim(),
+                    teacher_id: authUser.id, 
                     description: desc.trim(), 
                     weight: Number(weight), 
                     createdAt: Date.now() 
