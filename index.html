@@ -1168,8 +1168,15 @@
 
             const handleSave = async (studentId, assId) => {
                 const score = localGrades[`${studentId}_${assId}`];
-                if(score === undefined || score === '') return;
                 const id = `${studentId}_${assId}`;
+                
+                // PENGAMAN BARU: Jika nilai dihapus (kosong), perintahkan database untuk menghancurkannya
+                if(score === undefined || score === '') {
+                    await deleteDoc(doc(db, 'grades', id));
+                    return;
+                }
+                
+                // Jika ada isinya, simpan atau perbarui seperti biasa
                 await setDoc(doc(db, 'grades', id), { studentId, assessmentId: assId, score: Number(score), updatedAt: Date.now() });
             };
 
