@@ -391,7 +391,7 @@
                 const rows = await fetchSupabaseData('teachers');
                 if (!Array.isArray(rows) || rows.length === 0) return fallback;
 
-                const merged = { ...fallback };
+                const merged = {}; // Mengunci hanya data asli dari Supabase yang dimuat
                 rows.forEach(row => {
                     const profile = {
                         id: row.id || row.username || row.name,
@@ -762,6 +762,10 @@
 
             const saveClassesToDb = async () => {
                 setIsSaving(true);
+                // PENGAMAN: Jika laci memori browser kosong, paksa buat laci baru agar tidak error undefined
+                if (!LOCAL_DATA.teacher_classes) {
+                    LOCAL_DATA.teacher_classes = [];
+                }
                 try {
                     const promises = Object.entries(pendingChanges).map(async ([name, isActive]) => {
                         let target = data.classes.find(c => c.name === name);
@@ -1712,23 +1716,55 @@
                 }
             };
 
-            return (
+           return (
                 <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in pt-8">
                     <div className="border-b border-white/5 pb-6">
                         <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Settings className="text-indigo-400" /> Ruang Admin</h2>
-                        <p className="text-slate-400 mt-1">Mode offline: semua data disimpan di browser Anda dan tidak terhubung ke sheet, firebase, atau layanan eksternal.</p>
+                        <p className="text-slate-400 mt-1">Pusat Kendali Admin, Sinkronisasi Realtime, & Informasi Integrasi Aplikasi.</p>
+                    </div>
+
+                    {/* BLOK BARU: PUSAT PINTASAN INTEGRASI KONSOL PROJEK */}
+                    <div className="bg-[#0b1126]/90 border border-white/10 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 right-0 p-24 opacity-5 bg-gradient-to-br from-indigo-500 to-purple-500 blur-2xl"></div>
+                        <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Key size={20} className="text-indigo-400"/> Pintasan Pengembang (Dasbor Arsitek)</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <a href="https://github.com/gagataditya-create/DAFTAR-NILAI-APP" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">GitHub Daftar Nilai APP</span>
+                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Konsol &rarr;</span>
+                            </a>
+                            <a href="https://dash.cloudflare.com/c22ee62db8d5e590a81eca9ca715de93/workers/services/view/daftarnilaispenday/production" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Cloudflare Worker Dasbor</span>
+                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Konsol &rarr;</span>
+                            </a>
+                            <a href="https://daftarnilaispenday.gagataditya94.workers.dev/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Alamat URL Aplikasi Live</span>
+                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Link &rarr;</span>
+                            </a>
+                            <a href="https://supabase.com/dashboard/project/qtnmvphffxfnwgbkhtwh/sql/b6389541-c37d-4beb-b6fd-85ef709e181b" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Supabase SQL Dashboard</span>
+                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Gudang &rarr;</span>
+                            </a>
+                            <a href="https://gemini.google.com/u/1/app/9b4cd816fc61b2a3?pageId=none" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Gemini Pandu AI Collaborator</span>
+                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Chat &rarr;</span>
+                            </a>
+                            <a href="https://docs.google.com/spreadsheets/d/1X7zPzMKXceFxW3PsjIu16lj2JhauZcGPU_JaWmADyYs/edit?gid=1540998902#gid=1540998902" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Google Sheet Master Data</span>
+                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Sheet &rarr;</span>
+                            </a>
+                        </div>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
-                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Mode Offline</h3>
+                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Manajemen Database</h3>
                             
                             <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl text-sm text-indigo-200">
-                                Aplikasi ini berjalan sepenuhnya dari browser Anda. Data siswa, materi, dan nilai disimpan di localStorage perangkat ini, tanpa koneksi ke sheet atau firebase.
+                                Pembersihan penyimpanan lokal digunakan apabila browser Anda menolak memuat data terbaru atau mengalami crash akibat memori usang.
                             </div>
 
                             <button onClick={handleResetLocalData} className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all">
-                                <Trash2 size={18} /> HAPUS DATA LOKAL
+                                <Trash2 size={18} /> BERSIHKAN MEMORI LOKAL BROWSER
                             </button>
                         </div>
 
@@ -1736,18 +1772,12 @@
                             <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Users size={20} className="text-emerald-400"/> Master Data Siswa</h3>
                             
                             <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-sm text-emerald-200">
-                                Import data siswa seluruh sekolah secara permanen dari sini. Guru lain (Pak Indra, Ibu Yuyun) akan otomatis bisa melihat daftar siswa ini.
+                                Perbarui atau tambahkan database siswa seluruh kelas secara massal dari sini. Data otomatis tersinkronisasi realtime ke semua portal guru.
                             </div>
 
                             <button onClick={() => setShowImport(true)} className="w-full mt-4 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 py-4 rounded-xl font-bold flex justify-center items-center gap-3 hover:bg-emerald-600 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                                <Clipboard size={22} /> IMPORT DATA DARI EXCEL
+                                <Clipboard size={22} /> PORTAL IMPORT EXCEL DATA SISWA
                             </button>
-
-                            <div className="pt-4 border-t border-white/10 mt-4">
-                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-sm text-emerald-200">
-                                    Anda tetap bisa mengimpor daftar siswa dari Excel, lalu data tersebut akan tersimpan secara lokal di browser ini.
-                                </div>
-                            </div>
                         </div>
                     </div>
 
