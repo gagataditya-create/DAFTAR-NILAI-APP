@@ -338,7 +338,10 @@
             return supabase.from(tableName).upsert([payload]).select('*').single();
         };
 
-        const listener = async (state) => {
+        const onSnapshot = (col, callback) => {
+            const tableName = typeof col === 'string' ? col : col.table || col;
+            
+            const listener = async (state) => {
                 const supabaseData = await fetchSupabaseData(tableName);
                 
                 if (supabaseData && supabaseData.length >= 0) {
