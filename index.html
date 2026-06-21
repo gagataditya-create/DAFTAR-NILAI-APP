@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Penilaian</title>
 
-    <!-- SETUP LOGO & PWA -->
     <link rel="icon" type="image/png" href="./logo.png">
     <link rel="apple-touch-icon" href="./logo.png">
     <meta name="theme-color" content="#020617">
     
-    <!-- 1. TAILWIND CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. KONFIGURASI IMPORT -->
     <script type="importmap">
     {
         "imports": {
@@ -24,12 +21,9 @@
     }
     </script>
 
-    <!-- 3. BABEL -->
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
-    <!-- 4. SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- STYLE TAMBAHAN -->
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
@@ -75,7 +69,6 @@
         })();
     </script>
 
-    <!-- 4. KODE UTAMA APLIKASI -->
     <script type="text/babel" data-type="module" data-presets="react">
         import React, { useState, useEffect, useMemo, useRef } from 'react';
         import ReactDOM from 'react-dom/client';
@@ -1274,6 +1267,25 @@
                 }
             };
 
+            const handleKeyDown = (e, rowIdx, colIdx) => {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                    let nextRow = rowIdx;
+                    let nextCol = colIdx;
+
+                    if (e.key === 'ArrowUp') nextRow -= 1;
+                    if (e.key === 'ArrowDown') nextRow += 1;
+                    if (e.key === 'ArrowLeft') nextCol -= 1;
+                    if (e.key === 'ArrowRight') nextCol += 1;
+
+                    const nextInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
+                    if (nextInput) {
+                        nextInput.focus();
+                        nextInput.select();
+                    }
+                }
+            };
+
             return (
                 <div className="space-y-6 animate-in fade-in relative">
                     {isSavingBatch && (
@@ -1328,7 +1340,7 @@
                                         <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
                                             <td className="p-2 md:p-4 text-slate-500 font-mono text-xs md:text-sm text-center">{idx + 1}</td>
                                             <td className="p-2 md:p-4 text-slate-200 font-medium text-xs md:text-sm whitespace-normal break-words leading-tight sticky left-0 bg-[#0b1126] z-10 border-r border-white/5 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{s.name}</td>
-                                            {myFilteredAssessments.map(a => {
+                                            {myFilteredAssessments.map((a, colIdx) => {
                                                 const globalScore = data.grades[`${s.id}_${a.id}`];
                                                 const localScore = localGrades[`${s.id}_${a.id}`];
                                                 const isUnsaved = localScore !== undefined && localScore !== '' && Number(localScore) !== Number(globalScore);
@@ -1337,10 +1349,13 @@
                                                 <td key={a.id} className="p-1 md:p-2 text-center relative group">
                                                     <input 
                                                         type="number" min="0" max="100" 
+                                                        data-row={idx}
+                                                        data-col={colIdx}
                                                         value={localScore !== undefined ? localScore : ''} 
                                                         onChange={e => handleGradeChange(s.id, a.id, e.target.value)}
                                                         onBlur={() => handleSave(s.id, a.id)}
                                                         onPaste={(e) => handlePasteToTable(e, idx, a.id)}
+                                                        onKeyDown={(e) => handleKeyDown(e, idx, colIdx)}
                                                         className={`w-full bg-transparent border-b-2 px-1 py-2 md:px-2 text-center font-bold text-sm md:text-base outline-none transition-all placeholder:text-slate-700
                                                             ${isUnsaved ? 'border-yellow-500 text-yellow-400 bg-yellow-500/5' : 'border-transparent text-white focus:border-indigo-500 hover:border-white/20 focus:bg-indigo-500/10'}
                                                             ${localScore !== undefined && Number(localScore) < 70 ? '!text-red-400' : ''}
@@ -1594,318 +1609,3 @@
                             ))
                         )}
                     </div>
-
-                    <div className="flex flex-col lg:flex-row gap-6">
-                        <div className="lg:w-72 flex flex-col gap-6 shrink-0">
-                            <div className="bg-[#0b1126] border border-white/10 rounded-2xl p-6 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-16 opacity-10 bg-gradient-to-br from-indigo-500 to-purple-500 blur-2xl"></div>
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Target Rapor KLS {activeGradeLevel}</h3>
-                                <p className="text-[11px] text-emerald-300/90 mb-3">KKM ini tersimpan khusus untuk akun {authUser.name.split(',')[0]} pada <b>Jenjang {activeGradeLevel}</b>. Otomatis menyesuaikan saat Anda pindah kelas.</p>
-                                <div className="space-y-4 relative z-10">
-                                    <div>
-                                        <label className="text-xs text-slate-500 mb-1 block">Target Min (KKM)</label>
-                                        <input type="number" value={targetMin} onChange={e => handleKkmChange('min', e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-500 mb-1 block">Target Max</label>
-                                        <input type="number" value={targetMax} onChange={e => handleKkmChange('max', e.target.value)} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-lg text-white font-mono outline-none focus:border-indigo-500" />
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-[#0b1126] border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-16 opacity-10 bg-gradient-to-br from-cyan-500 to-blue-500 blur-2xl"></div>
-                                <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">Rentang Aktual</h3>
-                                <div className="space-y-4 relative z-10">
-                                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                                        <span className="text-slate-400 text-sm">Terendah:</span>
-                                        <span className="text-white font-mono font-bold text-xl">{actualMin.toFixed(1)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 text-sm">Tertinggi:</span>
-                                        <span className="text-white font-mono font-bold text-xl">{actualMax.toFixed(1)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 bg-[#0b1126] border border-white/10 rounded-2xl overflow-x-auto custom-scrollbar p-1 shadow-2xl relative">
-                            <table className="w-full text-left border-collapse min-w-max">
-                                <thead className="bg-slate-950">
-                                    <tr>
-                                        <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center w-8 md:w-12">No</th>
-                                        {viewMode === 'jenjang' && <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 min-w-[50px] md:w-24 text-center">Kls</th>}
-                                        <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 border-r min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Nama Siswa</th>
-                                        {myFilteredAssessments.map(a => (
-                                            <th key={a.id} className="p-2 md:p-4 text-slate-500 font-bold text-[9px] md:text-[10px] uppercase tracking-wider border-b border-white/10 text-center min-w-[60px] md:min-w-[80px]">
-                                                <div className="truncate w-full" title={a.title}>{a.title}</div>
-                                                <span className="text-indigo-400/50">W:{a.weight||1}</span>
-                                            </th>
-                                        ))}
-                                        <th className="p-2 md:p-4 text-slate-300 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center min-w-[60px] md:w-24">Asli</th>
-                                        <th className="p-2 md:p-4 text-emerald-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center bg-emerald-500/10 min-w-[60px] md:w-24">Konv</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {studentsWithOriginal.map((s, idx) => {
-                                        const finalScore = convertScore(s.originalScore);
-                                        const finalColor = finalScore && finalScore < targetMin ? 'text-red-400' : 'text-emerald-400';
-                                        
-                                        return (
-                                        <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
-                                            <td className="p-2 md:p-4 text-slate-500 font-mono text-xs md:text-sm text-center">{idx + 1}</td>
-                                            {viewMode === 'jenjang' && <td className="p-2 md:p-4 text-slate-400 text-xs md:text-sm font-bold text-center">{activeClasses.find(c => c.id === s.classId)?.name}</td>}
-                                            <td className="p-2 md:p-4 text-slate-200 font-medium text-xs md:text-sm whitespace-normal break-words leading-tight sticky left-0 bg-[#0b1126] z-10 border-r border-white/5 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{s.name}</td>
-                                            
-                                            {myFilteredAssessments.map(a => {
-                                                const score = data.grades[`${s.id}_${a.id}`];
-                                                return (
-                                                    <td key={a.id} className="p-2 text-center text-slate-400 font-mono text-xs md:text-sm">
-                                                        {score !== undefined ? score : '-'}
-                                                    </td>
-                                                );
-                                            })}
-
-                                            <td className="p-2 md:p-4 text-center text-slate-300 font-mono text-xs md:text-base">
-                                                {s.originalScore !== null ? s.originalScore.toFixed(1) : '-'}
-                                            </td>
-                                            <td className={`p-2 md:p-4 text-center font-black font-mono bg-emerald-500/5 text-sm md:text-lg ${finalColor}`}>
-                                                {finalScore !== null ? finalScore : '-'}
-                                            </td>
-                                        </tr>
-                                    )})}
-                                </tbody>
-                            </table>
-                            {studentsWithOriginal.length === 0 && <div className="p-8 text-center text-slate-500">Tidak ada data siswa untuk ditampilkan.</div>}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // --- SETTINGS VIEW (KHUSUS ADMIN) ---
-        function SettingsView({ authUser, data, showMessage, showConfirm }) {
-            const [urlInput, setUrlInput] = useState(activeApiKey || '');
-            const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('seru_master_sheet_url') || 'https://docs.google.com/spreadsheets/d/1AgvT6eVfMCQvuvyJ1XOBRGst1luByFE05Qq2DkG3DsY/edit');
-            const [showImport, setShowImport] = useState(false);
-            const [txt, setTxt] = useState('');
-            const [isSaving, setIsSaving] = useState(false);
-
-            if (!authUser.isAdmin) {
-                return (
-                    <div className="flex flex-col items-center justify-center h-[60vh] text-center animate-in fade-in zoom-in duration-300">
-                        <div className="p-6 bg-slate-900/50 rounded-full mb-6 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                            <Lock size={64} className="text-slate-500" />
-                        </div>
-                        <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Akses Terkunci</h2>
-                        <p className="text-slate-400 max-w-md">Tab Pengaturan dan Sinkronisasi Data Master Siswa hanya dapat diakses oleh Admin Sekolah (Bpk. Gagat).</p>
-                    </div>
-                );
-            }
-
-            const handleResetLocalData = () => {
-                showConfirm("Hapus semua data lokal yang tersimpan di browser ini?", () => {
-                    localStorage.removeItem('seru_local_app_data_v1');
-                    showMessage("Data lokal berhasil dibersihkan. Halaman akan dimuat ulang.", "Reset Selesai");
-                    setTimeout(() => window.location.reload(), 1000);
-                });
-            };
-
-            const handleImport = async () => {
-                if (!txt.trim()) return;
-                setIsSaving(true);
-                try {
-                    const textToParse = txt.replace(/\n/g, ' '); 
-                    const regex = /(.+?)([789][A-Za-z])/gi;
-                    let match;
-                    const studentsToAdd = [];
-                    
-                    while ((match = regex.exec(textToParse)) !== null) {
-                        let studentName = match[1].trim();
-                        let classNameRaw = match[2].toUpperCase().trim();
-                        studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
-                        if (studentName && classNameRaw) {
-                            studentsToAdd.push({ name: studentName, className: classNameRaw });
-                        }
-                    }
-
-                    if (studentsToAdd.length === 0) {
-                        const lines = txt.split('\n');
-                        for (let line of lines) {
-                            line = line.trim();
-                            if (!line || line.toLowerCase().startsWith('nama')) continue;
-                            let studentName = '';
-                            let classNameRaw = '';
-                            
-                            if (line.includes(',') || line.includes('\t')) {
-                                const parts = line.split(/[,\t]/);
-                                if (parts.length >= 2) {
-                                    studentName = parts[0].trim();
-                                    classNameRaw = parts[parts.length-1].trim(); 
-                                }
-                            } else {
-                                const lastSpaceIndex = line.lastIndexOf(' ');
-                                if (lastSpaceIndex !== -1) {
-                                    studentName = line.substring(0, lastSpaceIndex).trim();
-                                    classNameRaw = line.substring(lastSpaceIndex).trim();
-                                }
-                            }
-
-                            if (!studentName || !classNameRaw) continue;
-                            studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
-                            if(studentName) {
-                                studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
-                            }
-                        }
-                    }
-
-                    if (studentsToAdd.length === 0) {
-                        showMessage("Gagal membaca format! Pastikan ada format Nama dan Kelas (Angka & Huruf).", "Error");
-                        setIsSaving(false);
-                        return;
-                    }
-
-                    let count = 0;
-                    const localClassesRef = [...data.classes]; 
-                    const localStudentsTrack = new Set(data.students.map(s => `${s.name.toUpperCase()}_${s.classId}`));
-
-                    for (const s of studentsToAdd) {
-                        const targetClassName = s.className;
-                        let targetClass = localClassesRef.find(c => c.name.toUpperCase() === targetClassName);
-                        let classId = targetClass?.id;
-                        
-                        if (!targetClass) {
-                            const newClassRef = await addDoc(collection(db, 'classes'), { name: targetClassName, isActive: true, createdAt: Date.now() });
-                            classId = newClassRef.id;
-                            localClassesRef.push({ id: classId, name: targetClassName, isActive: true });
-                            await new Promise(resolve => setTimeout(resolve, 300)); 
-                        } else if (targetClass.isActive === false) {
-                            await updateDoc(doc(db, 'classes', classId), { isActive: true });
-                            targetClass.isActive = true;
-                            await new Promise(resolve => setTimeout(resolve, 300));
-                        }
-                        
-                        const studentKey = `${s.name.toUpperCase()}_${classId}`;
-                        
-                        if (!localStudentsTrack.has(studentKey)) {
-                            await addDoc(collection(db, 'students'), { name: s.name, classId, createdAt: Date.now() });
-                            localStudentsTrack.add(studentKey);
-                            count++;
-                            
-                            setTxt(`MEMPROSES PENYIMPANAN LOKAL...\nSedang menyimpan: ${count} dari ${studentsToAdd.length} siswa.\n\nData ini disimpan di browser Anda, bukan di sheet atau firebase...`);
-                            await new Promise(resolve => setTimeout(resolve, 350));
-                        }
-                    }
-                    
-                    showMessage(`Import ${count} siswa berhasil disimpan ke database!`, "Sukses"); 
-                    setTxt(''); 
-                    setShowImport(false);
-                } catch (e) {
-                    showMessage("Terjadi kesalahan import: " + e.message, "Error");
-                } finally {
-                    setIsSaving(false);
-                }
-            };
-
-           return (
-                <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in pt-8">
-                    <div className="border-b border-white/5 pb-6">
-                        <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Settings className="text-indigo-400" /> Ruang Admin</h2>
-                        <p className="text-slate-400 mt-1">Pusat Kendali Admin, Sinkronisasi Realtime, & Informasi Integrasi Aplikasi.</p>
-                    </div>
-
-                    {/* BLOK BARU: PUSAT PINTASAN INTEGRASI KONSOL PROJEK */}
-                    <div className="bg-[#0b1126]/90 border border-white/10 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 p-24 opacity-5 bg-gradient-to-br from-indigo-500 to-purple-500 blur-2xl"></div>
-                        <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Key size={20} className="text-indigo-400"/> Pintasan Pengembang (Dasbor Arsitek)</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <a href="https://github.com/gagataditya-create/DAFTAR-NILAI-APP" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">GitHub Daftar Nilai APP</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Konsol &rarr;</span>
-                            </a>
-                            <a href="https://dash.cloudflare.com/c22ee62db8d5e590a81eca9ca715de93/workers/services/view/daftarnilaispenday/production" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Cloudflare Worker Dasbor</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Konsol &rarr;</span>
-                            </a>
-                            <a href="https://daftarnilaispenday.gagataditya94.workers.dev/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Alamat URL Aplikasi Live</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Link &rarr;</span>
-                            </a>
-                            <a href="https://supabase.com/dashboard/project/qtnmvphffxfnwgbkhtwh/sql/b6389541-c37d-4beb-b6fd-85ef709e181b" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Supabase SQL Dashboard</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Gudang &rarr;</span>
-                            </a>
-                            <a href="https://gemini.google.com/u/1/app/9b4cd816fc61b2a3?pageId=none" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Gemini Pandu AI Collaborator</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Chat &rarr;</span>
-                            </a>
-                            <a href="https://docs.google.com/spreadsheets/d/1X7zPzMKXceFxW3PsjIu16lj2JhauZcGPU_JaWmADyYs/edit?gid=1540998902#gid=1540998902" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Google Sheet Master Data</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Sheet &rarr;</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
-                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Manajemen Database</h3>
-                            
-                            <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl text-sm text-indigo-200">
-                                Pembersihan penyimpanan lokal digunakan apabila browser Anda menolak memuat data terbaru atau mengalami crash akibat memori usang.
-                            </div>
-
-                            <button onClick={handleResetLocalData} className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all">
-                                <Trash2 size={18} /> BERSIHKAN MEMORI LOKAL BROWSER
-                            </button>
-                        </div>
-
-                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
-                            <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Users size={20} className="text-emerald-400"/> Master Data Siswa</h3>
-                            
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-sm text-emerald-200">
-                                Perbarui atau tambahkan database siswa seluruh kelas secara massal dari sini. Data otomatis tersinkronisasi realtime ke semua portal guru.
-                            </div>
-
-                            <button onClick={() => setShowImport(true)} className="w-full mt-4 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 py-4 rounded-xl font-bold flex justify-center items-center gap-3 hover:bg-emerald-600 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                                <Clipboard size={22} /> PORTAL IMPORT EXCEL DATA SISWA
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* MODAL IMPORT */}
-                    {showImport && (
-                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
-                        <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-                            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Clipboard className="text-emerald-400"/> Paste Data Excel</h3>
-                                <button onClick={() => setShowImport(false)} className="text-slate-400 hover:text-white"><X/></button>
-                            </div>
-                            <div className="p-6 flex-1 overflow-auto">
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs text-emerald-300 mb-4 font-mono">
-                                Tempelkan data seluruh siswa di sini!<br/>Contoh: <strong>BUDI 9AANDI 9B</strong>
-                            </div>
-                            <textarea value={txt} onChange={e => setTxt(e.target.value)} className="w-full h-64 p-4 bg-slate-950 border border-white/10 rounded-xl font-mono text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none custom-scrollbar" placeholder="Paste data siswa disini..."></textarea>
-                            </div>
-                            <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button onClick={handleImport} disabled={isSaving} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 shadow-lg transition-all disabled:opacity-50">
-                                {isSaving ? 'MEMPROSES...' : 'PROSES DATA'}
-                            </button>
-                            </div>
-                        </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<ArtGradesApp />);
-        } catch (error) {
-            if (window.__showFatalError) {
-                window.__showFatalError(error);
-            }
-        }
-    </script>
-</body>
-</html>
