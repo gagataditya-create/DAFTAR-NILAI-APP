@@ -520,23 +520,20 @@
                     }
                 });
 
-                const deduped = {};
-                Object.values(merged).forEach(profile => {
-                    const key = `${profile.name.toLowerCase()}|${profile.subject.toLowerCase()}`;
-                    const existing = deduped[key];
-                    if (!existing) {
-                        deduped[key] = profile;
-                        return;
-                    }
+                const profiles = Object.values(merged);
+                const uppercaseYuyun = profiles.find(profile =>
+                    profile.subject.toLowerCase() === 'bahasa inggris' &&
+                    profile.name.toLowerCase() === 'yuyun puji rahayu, s.s' &&
+                    profile.name !== profile.name.toLowerCase()
+                );
 
-                    const currentIsLowercase = profile.name === profile.name.toLowerCase();
-                    const existingIsLowercase = existing.name === existing.name.toLowerCase();
-                    if (existingIsLowercase && !currentIsLowercase) {
-                        deduped[key] = profile;
-                    }
-                });
+                const filteredProfiles = uppercaseYuyun ? profiles.filter(profile => {
+                    return !(profile.subject.toLowerCase() === 'bahasa inggris' &&
+                        profile.name.toLowerCase() === 'yuyun puji rahayu, s.s' &&
+                        profile.name === profile.name.toLowerCase());
+                }) : profiles;
 
-                return Object.fromEntries(Object.values(deduped).map(p => [p.id, p]));
+                return Object.fromEntries(filteredProfiles.map(p => [p.id, p]));
             } catch (e) {
                 console.warn('Gagal memuat guru dari Supabase:', e);
                 return fallback;
