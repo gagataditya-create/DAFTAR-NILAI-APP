@@ -134,8 +134,8 @@
                 id: 'isep',
                 name: 'Indra Setyo Pambudi, S.Pd',
                 subject: 'Matematika',
-                password: 'isep',
-                isAdmin: false,
+                password: 'monalisa',
+                isAdmin: true,
                 icon: <Percent size={24} />,
                 themeFrom: 'from-blue-600',
                 themeTo: 'to-cyan-600',
@@ -150,6 +150,83 @@
                 icon: <BookA size={24} />,
                 themeFrom: 'from-emerald-600',
                 themeTo: 'to-teal-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'sefri_bk': {
+                id: 'sefri_bk',
+                name: 'SEFRI BAYU ADI, S.Pd',
+                subject: 'BK',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <BookOpen size={24} />,
+                themeFrom: 'from-blue-600',
+                themeTo: 'to-cyan-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'nasiah_bk': {
+                id: 'nasiah_bk',
+                name: 'NASIAH KHOEROTUL, S.Pd',
+                subject: 'BK',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <BookA size={24} />,
+                themeFrom: 'from-emerald-600',
+                themeTo: 'to-teal-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'slamet_informatika': {
+                id: 'slamet_informatika',
+                name: 'SLAMET SUPRIYANTO, S.KM',
+                subject: 'Informatika',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <Percent size={24} />,
+                themeFrom: 'from-slate-600',
+                themeTo: 'to-violet-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'rohadi_bahasa_jawa': {
+                id: 'rohadi_bahasa_jawa',
+                name: 'ROHADI ALFARIS, S.Pd',
+                subject: 'Bahasa Jawa',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <PenTool size={24} />,
+                themeFrom: 'from-orange-600',
+                themeTo: 'to-amber-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'miftachul_bk': {
+                id: 'miftachul_bk',
+                name: 'MIFTACHUL ABDILLAH, S.Pd',
+                subject: 'BK',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <LayoutGrid size={24} />,
+                themeFrom: 'from-emerald-600',
+                themeTo: 'to-lime-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'erlynna_pp': {
+                id: 'erlynna_pp',
+                name: 'ERLYNNA AISYAH WARDANI, S.Pd',
+                subject: 'PP',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <ShieldAlert size={24} />,
+                themeFrom: 'from-fuchsia-600',
+                themeTo: 'to-pink-600',
+                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
+            },
+            'agita_pp': {
+                id: 'agita_pp',
+                name: 'AGITA VERANIKA PUTRI, S.Pd',
+                subject: 'PP',
+                password: 'guru123',
+                isAdmin: false,
+                icon: <Key size={24} />,
+                themeFrom: 'from-rose-600',
+                themeTo: 'to-red-600',
                 defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
             }
         };
@@ -305,8 +382,8 @@
         const verifyTeacherPassword = async (profile, password) => {
             if (!profile) return false;
             
-            // Pengecekan Khusus untuk Admin (Pak Gagat)
-            if (profile.id === 'gagat') {
+            // Pengecekan untuk admin
+            if (profile.isAdmin) {
                 return password === 'monalisa';
             }
             
