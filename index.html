@@ -491,19 +491,20 @@
                 const rows = await fetchSupabaseData('teachers');
                 if (!Array.isArray(rows) || rows.length === 0) return fallback;
 
-                const merged = {}; // Mengunci hanya data asli dari Supabase yang dimuat
+                const merged = {};
                 rows.forEach(row => {
+                    const fallbackProfile = fallback[row.id] || {};
                     const profile = {
-                        id: row.id || row.username || row.name,
-                        name: row.name || row.username || 'Guru',
-                        subject: row.subject || 'Umum',
-                        password: '',
-                        passwordHash: row.passwordHash || null,
-                        isAdmin: Boolean(row.isAdmin),
-                        icon: row.icon ? row.icon : fallback[row.id]?.icon || fallback.gagat.icon,
-                        themeFrom: row.themeFrom || fallback[row.id]?.themeFrom || 'from-indigo-600',
-                        themeTo: row.themeTo || fallback[row.id]?.themeTo || 'to-purple-600',
-                        defaultApiUrl: fallback[row.id]?.defaultApiUrl || fallback.gagat.defaultApiUrl,
+                        id: row.id || row.username || row.name || fallbackProfile.id || 'unknown',
+                        name: row.name || row.username || fallbackProfile.name || 'Guru',
+                        subject: row.subject || fallbackProfile.subject || 'Umum',
+                        password: fallbackProfile.password || '',
+                        passwordHash: row.passwordHash || fallbackProfile.passwordHash || null,
+                        isAdmin: fallbackProfile.isAdmin === true || row.isAdmin === true,
+                        icon: row.icon ? row.icon : fallbackProfile.icon || fallback.gagat.icon,
+                        themeFrom: row.themeFrom || fallbackProfile.themeFrom || 'from-indigo-600',
+                        themeTo: row.themeTo || fallbackProfile.themeTo || 'to-purple-600',
+                        defaultApiUrl: row.defaultApiUrl || fallbackProfile.defaultApiUrl || fallback.gagat.defaultApiUrl,
                         targetMin7: row.target_min_7 !== undefined ? row.target_min_7 : 77,
                         targetMax7: row.target_max_7 !== undefined ? row.target_max_7 : 91,
                         targetMin8: row.target_min_8 !== undefined ? row.target_min_8 : 79,
@@ -512,6 +513,11 @@
                         targetMax9: row.target_max_9 !== undefined ? row.target_max_9 : 95,
                     };
                     merged[profile.id] = profile;
+                });
+                Object.entries(fallback).forEach(([fallbackId, fallbackProfile]) => {
+                    if (!merged[fallbackId]) {
+                        merged[fallbackId] = fallbackProfile;
+                    }
                 });
                 return merged;
             } catch (e) {
