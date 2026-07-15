@@ -1833,6 +1833,28 @@
                 });
             };
 
+            const handleDeleteAllStudentsAndGrades = () => {
+                showConfirm("Apakah Anda yakin ingin menghapus seluruh data siswa dan nilai di database secara permanen? Tindakan ini tidak dapat dibatalkan.", async () => {
+                    try {
+                        // Hapus dari Supabase dengan urutan aman: grades dulu, lalu students
+                        await supabase.from('grades').delete().neq('id', '');
+                        await supabase.from('students').delete().neq('id', '');
+                        
+                        // Kosongkan state lokal aplikasi
+                        LOCAL_DATA.students = [];
+                        LOCAL_DATA.grades = {};
+                        saveLocalData(LOCAL_DATA);
+                        notifyListeners();
+                        
+                        // Tampilkan pesan sukses dan reload
+                        showMessage("Seluruh database siswa dan nilai berhasil dikosongkan!", "Sukses");
+                        setTimeout(() => window.location.reload(), 1500);
+                    } catch (error) {
+                        showMessage("Gagal menghapus data: " + (error.message || "Kesalahan tidak diketahui"), "Error");
+                    }
+                });
+            };
+
             const handleImport = async () => {
                 if (!txt.trim()) return;
                 setIsSaving(true);
@@ -1978,6 +2000,10 @@
 
                             <button onClick={handleResetLocalData} className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all">
                                 <Trash2 size={18} /> BERSIHKAN MEMORI LOKAL BROWSER
+                            </button>
+
+                            <button onClick={handleDeleteAllStudentsAndGrades} className="w-full bg-red-950/40 border border-red-500/30 text-red-400 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-red-600 hover:text-white transition-all">
+                                <Trash2 size={18} /> KOSONGKAN TOTAL DATA SISWA & NILAI LAMA
                             </button>
                         </div>
 
