@@ -1848,20 +1848,56 @@
                 if (!txt.trim()) return;
                 setIsSaving(true);
                 try {
-                    const textToParse = txt.replace(/\n/g, ' '); 
-                    const regex = /(.+?)([789][A-Za-z])/gi;
-                    let match;
                     const studentsToAdd = [];
                     
-                    while ((match = regex.exec(textToParse)) !== null) {
-                        let studentName = match[1].trim();
-                        let classNameRaw = match[2].toUpperCase().trim();
-                        studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
-                        if (studentName && classNameRaw) {
-                            studentsToAdd.push({ name: studentName, className: classNameRaw });
+                    // Metode 1: Split berdasarkan pattern kelas (7A-9Z) untuk parsing yang lebih akurat
+                    const classPattern = /([789][A-Z])\s*/gi;
+                    const textLines = txt.split('\n').map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith('nama'));
+                    
+                    for (let line of textLines) {
+                        // Cari semua class patterns dalam baris
+                        let classMatches = [];
+                        let classMatch;
+                        const classRegex = /([789][A-Z])/gi;
+                        while ((classMatch = classRegex.exec(line)) !== null) {
+                            classMatches.push({ className: classMatch[1].toUpperCase(), index: classMatch.index });
+                        }
+                        
+                        if (classMatches.length === 0) continue;
+                        
+                        // Untuk setiap class, ambil text sebelumnya sebagai nama siswa
+                        for (let i = 0; i < classMatches.length; i++) {
+                            const classObj = classMatches[i];
+                            const classNameRaw = classObj.className;
+                            
+                            // Tentukan range text untuk nama siswa
+                            let startIdx = 0;
+                            if (i > 0) {
+                                // Ambil dari setelah class sebelumnya
+                                startIdx = classMatches[i-1].index + 2; // +2 untuk skip class name (e.g., "9A")
+                            }
+                            
+                            let endIdx = classObj.index;
+                            let studentName = line.substring(startIdx, endIdx).trim();
+                            
+                            // Bersihkan nama dari angka di awal dan normalize
+                            studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
+                            studentName = studentName.replace(/\s+/g, ' '); // Normalize whitespace
+                            
+                            if (studentName && classNameRaw) {
+                                // Cek apakah sudah ada di array (prevent duplicates)
+                                const isDuplicate = studentsToAdd.some(s => 
+                                    s.name.toUpperCase() === studentName.toUpperCase() && 
+                                    s.className === classNameRaw
+                                );
+                                if (!isDuplicate) {
+                                    studentsToAdd.push({ name: studentName, className: classNameRaw });
+                                }
+                            }
                         }
                     }
 
+                    // Fallback: Jika metode 1 tidak menemukan data, gunakan parsing line-by-line tradisional
                     if (studentsToAdd.length === 0) {
                         const lines = txt.split('\n');
                         for (let line of lines) {
@@ -1886,8 +1922,14 @@
 
                             if (!studentName || !classNameRaw) continue;
                             studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
-                            if(studentName) {
-                                studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
+                            if(studentName && /^[789][A-Z]$/.test(classNameRaw.toUpperCase())) {
+                                const isDuplicate = studentsToAdd.some(s => 
+                                    s.name.toUpperCase() === studentName.toUpperCase() && 
+                                    s.className === classNameRaw.toUpperCase()
+                                );
+                                if (!isDuplicate) {
+                                    studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
+                                }
                             }
                         }
                     }
@@ -2019,7 +2061,7 @@
                             </div>
                             <div className="p-6 flex-1 overflow-auto">
                             <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs text-emerald-300 mb-4 font-mono">
-                                Tempelkan data seluruh siswa di sini!<br/>Contoh: <strong>BUDI 9AANDI 9B</strong>
+                                Tempelkan data seluruh siswa di sini!<br/><br/>Format yang diterima:<br/>• <strong>BUDI 9A ANDI 9B</strong> (per baris atau 1 baris)<br/>• <strong>BUDI,9A</strong> (dengan koma)<br/>• <strong>BUDI&nbsp;&nbsp;9A</strong> (dengan tab/spasi)<br/><br/>✓ Kelas: 7A-7Z, 8A-8Z, 9A-9Z
                             </div>
                             <textarea value={txt} onChange={e => setTxt(e.target.value)} className="w-full h-64 p-4 bg-slate-950 border border-white/10 rounded-xl font-mono text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none custom-scrollbar" placeholder="Paste data siswa disini..."></textarea>
                             </div>
