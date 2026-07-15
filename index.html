@@ -346,13 +346,19 @@
                 normalized.class_name = normalized.name;
                 delete normalized.name;
             }
-            if (tableName === 'students' && Object.prototype.hasOwnProperty.call(payload, 'name')) {
-                normalized.student_name = normalized.name;
-                delete normalized.name;
-            }
-            if (tableName === 'students' && Object.prototype.hasOwnProperty.call(payload, 'classId')) {
-                normalized.class_id = normalized.class_id ?? normalized.classid;
-                delete normalized.classid;
+            if (tableName === 'students') {
+                if (normalized.name !== undefined) {
+                    normalized.student_name = normalized.name;
+                    // Jangan hapus normalized.name karena Supabase butuh kolom 'name' juga
+                }
+                if (normalized.id !== undefined) {
+                    normalized.nis = normalized.id; // Samakan nilai nis dengan id
+                }
+                if (Object.prototype.hasOwnProperty.call(payload, 'classId')) {
+                    normalized.class_id = normalized.class_id ?? normalized.classid;
+                    delete normalized.classid;
+                }
+                normalized.is_active = true; // Wajib diset true agar sesuai struktur Supabase
             }
             if (tableName === 'assessments' && Object.prototype.hasOwnProperty.call(payload, 'maxScore')) {
                 normalized.max_score = normalized.max_score ?? normalized.maxscore;
