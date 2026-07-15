@@ -408,29 +408,27 @@
         };
 
         const syncSupabaseRecord = async (tableName, record, mode = 'upsert') => {
-            if (!supabase) {
-                console.warn('❌ syncSupabaseRecord: Supabase client tidak tersedia');
-                return null;
-            }
+            if (!supabase) return null;
             const payload = normalizePayload(record, tableName);
-            console.log(`💾 syncSupabaseRecord: ${mode.toUpperCase()} ke ${tableName}`, payload);
+            let result;
             try {
                 if (mode === 'delete') {
-                    const result = await supabase.from(tableName).delete().eq('id', record.id);
-                    console.log(`✅ syncSupabaseRecord: DELETE selesai untuk ${tableName}`, result);
-                    return result;
+                    result = await supabase.from(tableName).delete().eq('id', record.id);
+                } else if (mode === 'update' && record.id) {
+                    result = await supabase.from(tableName).update(payload).eq('id', record.id);
+                } else {
+                    result = await supabase.from(tableName).upsert([payload]).select('*').single();
                 }
-                if (mode === 'update' && record.id) {
-                    const result = await supabase.from(tableName).update(payload).eq('id', record.id);
-                    console.log(`✅ syncSupabaseRecord: UPDATE selesai untuk ${tableName}`, result);
-                    return result;
+                
+                // SISTEM X-RAY: Tangkap error dari Supabase dan tampilkan pop-up
+                if (result && result.error) {
+                    alert(`🚨 ERROR BACA SUPABASE!\nTabel: ${tableName}\nPesan: ${result.error.message}\nPayload: ${JSON.stringify(payload)}`);
+                    console.error("Payload yang gagal:", payload);
                 }
-                const result = await supabase.from(tableName).upsert([payload]).select('*').single();
-                console.log(`✅ syncSupabaseRecord: UPSERT selesai untuk ${tableName}`, result);
                 return result;
             } catch (e) {
-                console.error(`❌ syncSupabaseRecord: Error pada ${mode} ke ${tableName}:`, e);
-                throw e;
+                alert(`🚨 ERROR KONEKSI!\nTabel: ${tableName}\nPesan: ${e.message}`);
+                return null;
             }
         };
 
