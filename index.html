@@ -381,39 +381,63 @@
         };
 
         const fetchSupabaseData = async (tableName) => {
-            if (!supabase) return [];
+            if (!supabase) {
+                console.log('❌ fetchSupabaseData: Supabase client tidak tersedia untuk', tableName);
+                return [];
+            }
             try {
+                console.log('🔄 fetchSupabaseData: Fetching dari Supabase -', tableName);
                 const { data, error } = await supabase.from(tableName).select('*');
                 if (error) {
-                    console.warn('Supabase fetch failed for', tableName, error);
+                    console.warn('❌ Supabase fetch failed for', tableName, error);
                     return [];
                 }
-                return (data || []).map(row => normalizeRow(row));
+                const normalized = (data || []).map(row => normalizeRow(row));
+                console.log('✅ fetchSupabaseData: Berhasil fetch', tableName, 'jumlah:', normalized.length, 'data:', normalized);
+                return normalized;
             } catch (e) {
-                console.warn('Supabase fetch threw for', tableName, e);
+                console.warn('❌ Supabase fetch threw for', tableName, e);
                 return [];
             }
         };
 
         const syncSupabaseRecord = async (tableName, record, mode = 'upsert') => {
-            if (!supabase) return null;
+            if (!supabase) {
+                console.warn('❌ syncSupabaseRecord: Supabase client tidak tersedia');
+                return null;
+            }
             const payload = normalizePayload(record, tableName);
-            if (mode === 'delete') {
-                return supabase.from(tableName).delete().eq('id', record.id);
+            console.log(`💾 syncSupabaseRecord: ${mode.toUpperCase()} ke ${tableName}`, payload);
+            try {
+                if (mode === 'delete') {
+                    const result = await supabase.from(tableName).delete().eq('id', record.id);
+                    console.log(`✅ syncSupabaseRecord: DELETE selesai untuk ${tableName}`, result);
+                    return result;
+                }
+                if (mode === 'update' && record.id) {
+                    const result = await supabase.from(tableName).update(payload).eq('id', record.id);
+                    console.log(`✅ syncSupabaseRecord: UPDATE selesai untuk ${tableName}`, result);
+                    return result;
+                }
+                const result = await supabase.from(tableName).upsert([payload]).select('*').single();
+                console.log(`✅ syncSupabaseRecord: UPSERT selesai untuk ${tableName}`, result);
+                return result;
+            } catch (e) {
+                console.error(`❌ syncSupabaseRecord: Error pada ${mode} ke ${tableName}:`, e);
+                throw e;
             }
-            if (mode === 'update' && record.id) {
-                return supabase.from(tableName).update(payload).eq('id', record.id);
-            }
-            return supabase.from(tableName).upsert([payload]).select('*').single();
         };
 
         const onSnapshot = (col, callback) => {
             const tableName = typeof col === 'string' ? col : col.table || col;
+            console.log('📌 onSnapshot: Registering listener untuk', tableName);
             
             const listener = async (state) => {
+                console.log('🔔 onSnapshot listener TRIGGERED untuk', tableName);
                 const supabaseData = await fetchSupabaseData(tableName);
                 
                 if (supabaseData && supabaseData.length >= 0) {
+                    console.log('✅ onSnapshot: Menggunakan Supabase data untuk', tableName);
                     // Khusus tabel grades, paksa Supabase sinkron dengan memori lokal HP/TV
                     if (tableName === 'grades') {
                         const newGrades = {};
@@ -427,36 +451,43 @@
                             const [studentId, assessmentId] = id.split('_');
                             return { data: () => ({ studentId, assessmentId, score }) };
                         });
+                        console.log('📤 onSnapshot: Callback dengan', docs.length, 'grades');
                         callback({ docs });
                         return;
                     }
                     
                     const docs = supabaseData.map(item => ({ id: item.id, data: () => item }));
+                    console.log('📤 onSnapshot: Callback dengan', docs.length, 'items untuk', tableName);
                     callback({ docs });
                     return;
                 }
 
                 // Fallback jika koneksi internet terputus atau data lokal
+                console.log('⚠️ onSnapshot: Fallback ke LOCAL_DATA untuk', tableName);
                 if (tableName === 'grades') {
                     const docs = Object.entries(state.grades || {}).map(([id, score]) => {
                         const [studentId, assessmentId] = id.split('_');
                         return { data: () => ({ studentId, assessmentId, score }) };
                     });
+                    console.log('📤 onSnapshot (fallback): Callback dengan', docs.length, 'grades');
                     callback({ docs });
                     return;
                 }
 
                 const docs = (state[tableName] || []).map(item => ({ id: item.id, data: () => item }));
+                console.log('📤 onSnapshot (fallback): Callback dengan', docs.length, 'items untuk', tableName);
                 callback({ docs });
             };
 
             dataListeners.push(listener);
+            console.log('🚀 onSnapshot: Initial listener call untuk', tableName);
             listener(LOCAL_DATA);
 
             if (supabase) {
                 try {
                     const channel = supabase.channel(`sync:${tableName}`);
                     channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
+                        console.log('🔄 onSnapshot: Realtime update detected untuk', tableName);
                         listener(LOCAL_DATA);
                     });
                     channel.subscribe();
@@ -465,7 +496,7 @@
                         supabase.removeChannel(channel);
                     };
                 } catch (e) {
-                    console.warn('Realtime subscribe failed for', tableName, e);
+                    console.warn('❌ Realtime subscribe failed for', tableName, e);
                 }
             }
 
