@@ -538,47 +538,64 @@
                 delete data._customId;
             }
             const newItem = { id, ...data };
+            
+            // 1. Tembak dan tunggu Supabase DULU
+            await syncSupabaseRecord(col, newItem, 'upsert').catch((e) => console.warn(e));
+            await apiPost({ action: 'create', table: col, data: newItem });
+            
+            // 2. BARU simpan lokal dan update layar
             LOCAL_DATA[col] = [...(LOCAL_DATA[col] || []), newItem];
             saveLocalData(LOCAL_DATA);
             notifyListeners();
-            await syncSupabaseRecord(col, newItem, 'upsert').catch(() => {});
-            await apiPost({ action: 'create', table: col, data: newItem });
+            
             return { id };
         }
 
         const updateDoc = async (docRef, data) => {
             const col = docRef.col;
+            
+            // 1. Tembak dan tunggu Supabase DULU
+            await syncSupabaseRecord(col, { id: docRef.id, ...data }, 'update').catch((e) => console.warn(e));
+            await apiPost({ action: 'update', table: col, data: { id: docRef.id, ...data } });
+            
+            // 2. BARU simpan lokal dan update layar
             LOCAL_DATA[col] = LOCAL_DATA[col].map(item => item.id === docRef.id ? { ...item, ...data } : item);
             saveLocalData(LOCAL_DATA);
             notifyListeners();
-            await syncSupabaseRecord(col, { id: docRef.id, ...data }, 'update').catch(() => {});
-            await apiPost({ action: 'update', table: col, data: { id: docRef.id, ...data } });
         }
 
         const deleteDoc = async (docRef) => {
+            // 1. Tembak dan tunggu Supabase DULU
             if (docRef.col === 'grades') {
                 const id = docRef.id;
+                await syncSupabaseRecord('grades', { id }, 'delete').catch((e) => console.warn(e));
+                await apiPost({ action: 'deleteGrade', table: 'grades', data: { id } });
+                
                 delete LOCAL_DATA.grades[id];
                 saveLocalData(LOCAL_DATA);
-                await syncSupabaseRecord('grades', { id }, 'delete').catch(() => {});
-                await apiPost({ action: 'deleteGrade', table: 'grades', data: { id } });
             } else {
+                await syncSupabaseRecord(docRef.col, { id: docRef.id }, 'delete').catch((e) => console.warn(e));
+                await apiPost({ action: 'delete', table: docRef.col, data: { id: docRef.id } });
+                
                 LOCAL_DATA[docRef.col] = LOCAL_DATA[docRef.col].filter(item => item.id !== docRef.id);
                 saveLocalData(LOCAL_DATA);
-                await syncSupabaseRecord(docRef.col, { id: docRef.id }, 'delete').catch(() => {});
-                await apiPost({ action: 'delete', table: docRef.col, data: { id: docRef.id } });
             }
+            // 2. BARU update layar
             notifyListeners();
         }
 
         const setDoc = async (docRef, data, options) => {
              if(docRef.col === 'grades') {
                  const id = docRef.id;
+                 
+                 // 1. Tembak dan tunggu Supabase DULU
+                 await syncSupabaseRecord('grades', { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt }, 'upsert').catch((e) => console.warn(e));
+                 await apiPost({ action: 'setGrade', table: 'grades', data: { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt } });
+                 
+                 // 2. BARU simpan lokal dan update layar
                  LOCAL_DATA.grades[id] = data.score;
                  saveLocalData(LOCAL_DATA);
                  notifyListeners();
-                 await syncSupabaseRecord('grades', { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt }, 'upsert').catch(() => {});
-                 await apiPost({ action: 'setGrade', table: 'grades', data: { id, studentId: data.studentId, assessmentId: data.assessmentId, score: data.score, updatedAt: data.updatedAt } });
              }
         }
 
