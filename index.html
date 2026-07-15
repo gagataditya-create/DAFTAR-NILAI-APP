@@ -1850,11 +1850,16 @@
                 try {
                     const studentsToAdd = [];
                     
+                    console.log('===== DEBUG IMPORT START =====');
+                    console.log('Input text:', txt);
+                    
                     // Metode 1: Split berdasarkan pattern kelas (7A-9Z) untuk parsing yang lebih akurat
-                    const classPattern = /([789][A-Z])\s*/gi;
                     const textLines = txt.split('\n').map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith('nama'));
+                    console.log('Text lines parsed:', textLines);
                     
                     for (let line of textLines) {
+                        console.log('Processing line:', line);
+                        
                         // Cari semua class patterns dalam baris
                         let classMatches = [];
                         let classMatch;
@@ -1863,7 +1868,11 @@
                             classMatches.push({ className: classMatch[1].toUpperCase(), index: classMatch.index });
                         }
                         
-                        if (classMatches.length === 0) continue;
+                        console.log('Class matches found:', classMatches);
+                        if (classMatches.length === 0) {
+                            console.log('No class matches, skipping line');
+                            continue;
+                        }
                         
                         // Untuk setiap class, ambil text sebelumnya sebagai nama siswa
                         for (let i = 0; i < classMatches.length; i++) {
@@ -1880,6 +1889,8 @@
                             let endIdx = classObj.index;
                             let studentName = line.substring(startIdx, endIdx).trim();
                             
+                            console.log(`  Processing class ${classNameRaw}: name substring [${startIdx}:${endIdx}] = "${studentName}"`);
+                            
                             // Bersihkan nama dari angka di awal dan normalize
                             studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
                             studentName = studentName.replace(/\s+/g, ' '); // Normalize whitespace
@@ -1892,13 +1903,19 @@
                                 );
                                 if (!isDuplicate) {
                                     studentsToAdd.push({ name: studentName, className: classNameRaw });
+                                    console.log(`  ✓ Added: ${studentName} (${classNameRaw})`);
+                                } else {
+                                    console.log(`  ⊘ Duplicate skipped: ${studentName} (${classNameRaw})`);
                                 }
+                            } else {
+                                console.log(`  ✗ Invalid: name="${studentName}" class="${classNameRaw}"`);
                             }
                         }
                     }
 
                     // Fallback: Jika metode 1 tidak menemukan data, gunakan parsing line-by-line tradisional
                     if (studentsToAdd.length === 0) {
+                        console.log('Metode 1 failed, trying fallback method');
                         const lines = txt.split('\n');
                         for (let line of lines) {
                             line = line.trim();
@@ -1929,20 +1946,28 @@
                                 );
                                 if (!isDuplicate) {
                                     studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
+                                    console.log(`  ✓ Fallback added: ${studentName} (${classNameRaw.toUpperCase()})`);
                                 }
                             }
                         }
                     }
 
+                    console.log('Total students to add:', studentsToAdd.length);
+                    console.log('Students list:', studentsToAdd);
+
                     if (studentsToAdd.length === 0) {
                         showMessage("Gagal membaca format! Pastikan ada format Nama dan Kelas (Angka & Huruf).", "Error");
                         setIsSaving(false);
+                        console.log('===== DEBUG IMPORT END (NO DATA) =====');
                         return;
                     }
 
                     let count = 0;
                     const localClassesRef = [...data.classes]; 
                     const localStudentsTrack = new Set(data.students.map(s => `${s.name.toUpperCase()}_${s.classId}`));
+
+                    console.log('Existing classes:', localClassesRef);
+                    console.log('Existing students:', localStudentsTrack);
 
                     for (const s of studentsToAdd) {
                         const targetClassName = s.className;
@@ -1953,29 +1978,69 @@
                             const newClassRef = await addDoc(collection(db, 'classes'), { name: targetClassName, isActive: true, createdAt: Date.now() });
                             classId = newClassRef.id;
                             localClassesRef.push({ id: classId, name: targetClassName, isActive: true });
+                            console.log('Created new class', targetClassName, 'with ID', classId);
                             await new Promise(resolve => setTimeout(resolve, 300)); 
                         } else if (targetClass.isActive === false) {
                             await updateDoc(doc(db, 'classes', classId), { isActive: true });
                             targetClass.isActive = true;
+                            console.log('Activated existing class', targetClassName);
                             await new Promise(resolve => setTimeout(resolve, 300));
                         }
                         
                         const studentKey = `${s.name.toUpperCase()}_${classId}`;
                         
                         if (!localStudentsTrack.has(studentKey)) {
-                            await addDoc(collection(db, 'students'), { name: s.name, classId, createdAt: Date.now() });
+                            const result = await addDoc(collection(db, 'students'), { name: s.name, classId, createdAt: Date.now() });
+                            console.log('Added student', s.name, 'to class', classId, 'with ID', result.id);
                             localStudentsTrack.add(studentKey);
                             count++;
                             
                             setTxt(`MEMPROSES PENYIMPANAN LOKAL...\nSedang menyimpan: ${count} dari ${studentsToAdd.length} siswa.\n\nData ini disimpan di browser Anda, bukan di sheet atau firebase...`);
                             await new Promise(resolve => setTimeout(resolve, 350));
+                        } else {
+                            console.log('Student already exists:', s.name);
                         }
                     }
+                    
+                    console.log('Finished adding', count, 'new students');
+                    console.log('LOCAL_DATA.students after import:', LOCAL_DATA.students);
+                    console.log('LOCAL_DATA.classes after import:', LOCAL_DATA.classes);
+                    
+                    // Force refresh data dari Supabase untuk memastikan sinkronisasi
+                    if (supabase) {
+                        try {
+                            const [classesData, studentsData] = await Promise.all([
+                                fetchSupabaseData('classes'),
+                                fetchSupabaseData('students')
+                            ]);
+                            console.log('Supabase classes:', classesData);
+                            console.log('Supabase students:', studentsData);
+                            
+                            if (classesData && Array.isArray(classesData)) {
+                                LOCAL_DATA.classes = classesData.map(c => ({ id: c.id, name: c.name, isActive: c.isActive !== false }));
+                            }
+                            if (studentsData && Array.isArray(studentsData)) {
+                                LOCAL_DATA.students = studentsData.map(s => ({ id: s.id, name: s.name, classId: s.classId }));
+                            }
+                            saveLocalData(LOCAL_DATA);
+                        } catch (e) {
+                            console.warn('Supabase refresh failed:', e);
+                        }
+                    }
+                    
+                    notifyListeners();
+                    
+                    console.log('===== DEBUG IMPORT END (SUCCESS) =====');
+                    console.log('Final LOCAL_DATA:', LOCAL_DATA);
                     
                     showMessage(`Import ${count} siswa berhasil disimpan ke database!`, "Sukses"); 
                     setTxt(''); 
                     setShowImport(false);
+                    
+                    // Reload halaman untuk memastikan data ter-sync sempurna
+                    setTimeout(() => window.location.reload(), 1500);
                 } catch (e) {
+                    console.error('===== DEBUG IMPORT ERROR =====', e);
                     showMessage("Terjadi kesalahan import: " + e.message, "Error");
                 } finally {
                     setIsSaving(false);
