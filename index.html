@@ -1,3 +1,6 @@
+Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membuat draf dan menyempurnakan konten, serta dapatkan Gemini Pro dengan akses ke AI generasi berikutnya dari Google
+1
+100%
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -243,9 +246,9 @@
                 targetMax: Number(values.targetMax) || 0,
             }));
         };
-        const SUPABASE_URL = 'https://qtnmvphffxfnwgbkhtwh.supabase.co';
-        const activeApiKey = 'sb_publishable_bbxwugdf_CR019mf5VUUAg_3aGuM8Oj';
-        const SUPABASE_ANON_KEY = activeApiKey;
+        const SUPABASE_URL = 'https://tlmumxzflyqteaaojrdo.supabase.co';
+const activeApiKey = 'sb_publishable_QDyPlVZJUclUQMkG2pzvLw_RnCpWu_1';
+const SUPABASE_ANON_KEY = activeApiKey;
 
         const createSupabaseClient = () => {
             try {
@@ -313,26 +316,25 @@
 
             if (normalized.passwordHash === undefined && normalized.password_hash !== undefined) normalized.passwordHash = normalized.password_hash;
             if (normalized.isAdmin === undefined && normalized.is_admin !== undefined) normalized.isAdmin = normalized.is_admin;
-            if (normalized.themeFrom === undefined && normalized.theme_from !== undefined) normalized.themeFrom = normalized.theme_from;
-            if (normalized.themeTo === undefined && normalized.theme_to !== undefined) normalized.themeTo = normalized.theme_to;
-            if (normalized.passwordHash === undefined && normalized.password_hash !== undefined) normalized.passwordHash = normalized.password_hash;
-            if (normalized.isAdmin === undefined && normalized.is_admin !== undefined) normalized.isAdmin = normalized.is_admin;
-            if (normalized.themeFrom === undefined && normalized.theme_from !== undefined) normalized.themeFrom = normalized.theme_from;
-            if (normalized.themeTo === undefined && normalized.theme_to !== undefined) normalized.themeTo = normalized.theme_to;
-            if (normalized.className === undefined && normalized.class_name !== undefined) normalized.className = normalized.class_name;
-            if (normalized.studentName === undefined && normalized.student_name !== undefined) normalized.studentName = normalized.student_name;
-            if (normalized.classId === undefined && normalized.class_id !== undefined) normalized.classId = normalized.class_id;
-            if (normalized.studentId === undefined && normalized.student_id !== undefined) normalized.studentId = normalized.student_id;
-            if (normalized.assessmentId === undefined && normalized.assessment_id !== undefined) normalized.assessmentId = normalized.assessment_id;
-            if (normalized.teacherId === undefined && normalized.teacher_id !== undefined) normalized.teacherId = normalized.teacher_id;
-            if (normalized.subjectId === undefined && normalized.subject_id !== undefined) normalized.subjectId = normalized.subject_id;
-            if (normalized.assessmentType === undefined && normalized.assessment_type !== undefined) normalized.assessmentType = normalized.assessment_type;
-            if (normalized.maxScore === undefined && normalized.max_score !== undefined) normalized.maxScore = normalized.max_score;
-            if (normalized.createdAt === undefined && normalized.created_at !== undefined) normalized.createdAt = normalized.created_at;
-            if (normalized.updatedAt === undefined && normalized.updated_at !== undefined) normalized.updatedAt = normalized.updated_at;
-            if (normalized.title === undefined && normalized.assessment_title !== undefined) normalized.title = normalized.assessment_title;
-            if (normalized.name === undefined && normalized.className !== undefined) normalized.name = normalized.className;
-            if (normalized.name === undefined && normalized.studentName !== undefined) normalized.name = normalized.studentName;
+            if (!normalized.themeFrom && normalized.theme_from) normalized.themeFrom = normalized.theme_from;
+            if (!normalized.themeTo && normalized.theme_to) normalized.themeTo = normalized.theme_to;
+            
+            if (!normalized.className && normalized.class_name) normalized.className = normalized.class_name;
+            if (!normalized.studentName && normalized.student_name) normalized.studentName = normalized.student_name;
+            if (!normalized.classId && normalized.class_id) normalized.classId = normalized.class_id;
+            if (!normalized.studentId && normalized.student_id) normalized.studentId = normalized.student_id;
+            if (!normalized.assessmentId && normalized.assessment_id) normalized.assessmentId = normalized.assessment_id;
+            if (!normalized.teacherId && normalized.teacher_id) normalized.teacherId = normalized.teacher_id;
+            if (!normalized.subjectId && normalized.subject_id) normalized.subjectId = normalized.subject_id;
+            if (!normalized.assessmentType && normalized.assessment_type) normalized.assessmentType = normalized.assessment_type;
+            if (!normalized.maxScore && normalized.max_score) normalized.maxScore = normalized.max_score;
+            if (!normalized.createdAt && normalized.created_at) normalized.createdAt = normalized.created_at;
+            if (!normalized.updatedAt && normalized.updated_at) normalized.updatedAt = normalized.updated_at;
+            if (!normalized.title && normalized.assessment_title) normalized.title = normalized.assessment_title;
+            
+            // JARING PENGAMAN: Jika nama kosong, paksa ambil dari class_name
+            if (!normalized.name && normalized.className) normalized.name = normalized.className;
+            if (!normalized.name && normalized.studentName) normalized.name = normalized.studentName;
 
             return normalized;
         };
@@ -692,8 +694,14 @@
                 const unsubscribes = [
                     onSnapshot(query(collection(db, 'classes'), orderBy('name')), s => 
                         setData(p => ({ ...p, classes: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
-                    onSnapshot(query(collection(db, 'students'), orderBy('name')), s => 
-                        setData(p => ({ ...p, students: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
+                    onSnapshot(query(collection(db, 'students'), orderBy('name')), s => {
+    // Menarik data lalu mengurutkannya berdasarkan abjad nama (A-Z)
+    const sortedStudents = s.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'id'));
+        
+    setData(p => ({ ...p, students: sortedStudents }));
+}),
                     onSnapshot(query(collection(db, 'assessments'), orderBy('createdAt')), s => 
                         setData(p => ({ ...p, assessments: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
                     onSnapshot(query(collection(db, 'grades')), s => {
@@ -868,7 +876,7 @@
 
                         {activeTab === 'dashboard' && <DashboardView data={data} authUser={authUser} showMessage={showMessage} activeClasses={activeClasses} />}
                         {activeTab === 'classes' && <ClassesView data={data} activeClasses={activeClasses} showConfirm={showConfirm} authUser={authUser} />}
-                        {activeTab === 'assessments' && <AssessmentsView data={data} authUser={authUser} showConfirm={showConfirm} />}
+                        {activeTab === 'assessments' && <AssessmentsView data={data} authUser={authUser} showConfirm={showConfirm} showMessage={showMessage} />}
                         {activeTab === 'input' && <InputMatrixView data={data} authUser={authUser} activeClasses={activeClasses} showMessage={showMessage} />}
                         {activeTab === 'recap' && <RecapView data={data} authUser={authUser} activeClasses={activeClasses} showMessage={showMessage} />}
                         {activeTab === 'settings' && <SettingsView authUser={authUser} data={data} showMessage={showMessage} showConfirm={showConfirm} />}
@@ -1124,8 +1132,8 @@
             );
         }
 
-        // --- ASSESSMENTS VIEW ---
-        function AssessmentsView({ data, authUser, showConfirm }) {
+       // --- ASSESSMENTS VIEW ---
+function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
             const [title, setTitle] = useState('');
             const [desc, setDesc] = useState('');
             const [weight, setWeight] = useState(1); 
@@ -1846,13 +1854,30 @@
             );
         }
 
-        // --- SETTINGS VIEW (KHUSUS ADMIN) ---
+       // --- SETTINGS VIEW (KHUSUS ADMIN) ---
         function SettingsView({ authUser, data, showMessage, showConfirm }) {
             const [urlInput, setUrlInput] = useState(activeApiKey || '');
             const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('seru_master_sheet_url') || 'https://docs.google.com/spreadsheets/d/1AgvT6eVfMCQvuvyJ1XOBRGst1luByFE05Qq2DkG3DsY/edit');
             const [showImport, setShowImport] = useState(false);
             const [txt, setTxt] = useState('');
             const [isSaving, setIsSaving] = useState(false);
+
+            // STATE BARU: Untuk Tabel Master Siswa
+            const [studentFilterClass, setStudentFilterClass] = useState('ALL');
+            const [editingStudentId, setEditingStudentId] = useState(null);
+            const [editStudentName, setEditStudentName] = useState('');
+            const [editStudentClassId, setEditStudentClassId] = useState('');
+            const [searchStudent, setSearchStudent] = useState('');
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    setTxt(event.target.result);
+                };
+                reader.readAsText(file);
+            };
 
             if (!authUser.isAdmin) {
                 return (
@@ -1861,7 +1886,7 @@
                             <Lock size={64} className="text-slate-500" />
                         </div>
                         <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Akses Terkunci</h2>
-                        <p className="text-slate-400 max-w-md">Tab Pengaturan dan Sinkronisasi Data Master Siswa hanya dapat diakses oleh Admin Sekolah (Bpk. Gagat).</p>
+                        <p className="text-slate-400 max-w-md">Tab Pengaturan dan Sinkronisasi Data Master Siswa hanya dapat diakses oleh Admin Sekolah.</p>
                     </div>
                 );
             }
@@ -1877,17 +1902,14 @@
             const handleDeleteAllStudentsAndGrades = () => {
                 showConfirm("Apakah Anda yakin ingin menghapus seluruh data siswa dan nilai di database secara permanen? Tindakan ini tidak dapat dibatalkan.", async () => {
                     try {
-                        // Hapus dari Supabase dengan urutan aman: grades dulu, lalu students
                         await supabase.from('grades').delete().neq('id', '');
                         await supabase.from('students').delete().neq('id', '');
                         
-                        // Kosongkan state lokal aplikasi
                         LOCAL_DATA.students = [];
                         LOCAL_DATA.grades = {};
                         saveLocalData(LOCAL_DATA);
                         notifyListeners();
                         
-                        // Tampilkan pesan sukses dan reload
                         showMessage("Seluruh database siswa dan nilai berhasil dikosongkan!", "Sukses");
                         setTimeout(() => window.location.reload(), 1500);
                     } catch (error) {
@@ -1896,178 +1918,106 @@
                 });
             };
 
+            const handleDownloadTemplate = () => {
+                let csvContent = "Nama Siswa;Kelas\n";
+                csvContent += "Budi Santoso;9A\n";
+                csvContent += "Siti Aminah;9B\n";
+                csvContent += "Joko Widodo;8A\n";
+                csvContent += "Kartini;7C\n";
+
+                const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "Format_Master_Siswa.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
             const handleImport = async () => {
                 if (!txt.trim()) return;
                 setIsSaving(true);
                 try {
                     const studentsToAdd = [];
-                    
-                    console.log('===== DEBUG IMPORT START =====');
-                    console.log('Input text:', txt);
-                    
-                    // Metode 1: Split berdasarkan pattern kelas (7A-9Z) untuk parsing yang lebih akurat
-                    const textLines = txt.split('\n').map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith('nama'));
-                    console.log('Text lines parsed:', textLines);
-                    
-                    for (let line of textLines) {
-                        console.log('Processing line:', line);
+                    const lines = txt.split('\n');
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line || line.toLowerCase().startsWith('nama')) continue;
+                        let studentName = '';
+                        let classNameRaw = '';
                         
-                        // Cari semua class patterns dalam baris
-                        let classMatches = [];
-                        let classMatch;
-                        const classRegex = /([789][A-Z])/gi;
-                        while ((classMatch = classRegex.exec(line)) !== null) {
-                            classMatches.push({ className: classMatch[1].toUpperCase(), index: classMatch.index });
-                        }
-                        
-                        console.log('Class matches found:', classMatches);
-                        if (classMatches.length === 0) {
-                            console.log('No class matches, skipping line');
-                            continue;
-                        }
-                        
-                        // Untuk setiap class, ambil text sebelumnya sebagai nama siswa
-                        for (let i = 0; i < classMatches.length; i++) {
-                            const classObj = classMatches[i];
-                            const classNameRaw = classObj.className;
-                            
-                            // Tentukan range text untuk nama siswa
-                            let startIdx = 0;
-                            if (i > 0) {
-                                // Ambil dari setelah class sebelumnya
-                                startIdx = classMatches[i-1].index + 2; // +2 untuk skip class name (e.g., "9A")
+                        if (line.includes(';') || line.includes(',') || line.includes('\t')) {
+                            const parts = line.split(/[;,\t]/);
+                            if (parts.length >= 2) {
+                                studentName = parts[0].trim();
+                                classNameRaw = parts[parts.length-1].trim(); 
                             }
-                            
-                            let endIdx = classObj.index;
-                            let studentName = line.substring(startIdx, endIdx).trim();
-                            
-                            console.log(`  Processing class ${classNameRaw}: name substring [${startIdx}:${endIdx}] = "${studentName}"`);
-                            
-                            // Bersihkan nama dari angka di awal dan normalize
-                            studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
-                            studentName = studentName.replace(/\s+/g, ' '); // Normalize whitespace
-                            
-                            if (studentName && classNameRaw) {
-                                // Cek apakah sudah ada di array (prevent duplicates)
-                                const isDuplicate = studentsToAdd.some(s => 
-                                    s.name.toUpperCase() === studentName.toUpperCase() && 
-                                    s.className === classNameRaw
-                                );
-                                if (!isDuplicate) {
-                                    studentsToAdd.push({ name: studentName, className: classNameRaw });
-                                    console.log(`  ✓ Added: ${studentName} (${classNameRaw})`);
-                                } else {
-                                    console.log(`  ⊘ Duplicate skipped: ${studentName} (${classNameRaw})`);
-                                }
-                            } else {
-                                console.log(`  ✗ Invalid: name="${studentName}" class="${classNameRaw}"`);
+                        } else {
+                            const lastSpaceIndex = line.lastIndexOf(' ');
+                            if (lastSpaceIndex !== -1) {
+                                studentName = line.substring(0, lastSpaceIndex).trim();
+                                classNameRaw = line.substring(lastSpaceIndex).trim();
+                            }
+                        }
+
+                        if (!studentName || !classNameRaw) continue;
+                        studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
+                        
+                        if(studentName && /^[789][A-Z]$/.test(classNameRaw.toUpperCase())) {
+                            const isDuplicate = studentsToAdd.some(s => 
+                                s.name.toUpperCase() === studentName.toUpperCase() && 
+                                s.className === classNameRaw.toUpperCase()
+                            );
+                            if (!isDuplicate) {
+                                studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
                             }
                         }
                     }
-
-                    // Fallback: Jika metode 1 tidak menemukan data, gunakan parsing line-by-line tradisional
-                    if (studentsToAdd.length === 0) {
-                        console.log('Metode 1 failed, trying fallback method');
-                        const lines = txt.split('\n');
-                        for (let line of lines) {
-                            line = line.trim();
-                            if (!line || line.toLowerCase().startsWith('nama')) continue;
-                            let studentName = '';
-                            let classNameRaw = '';
-                            
-                            if (line.includes(',') || line.includes('\t')) {
-                                const parts = line.split(/[,\t]/);
-                                if (parts.length >= 2) {
-                                    studentName = parts[0].trim();
-                                    classNameRaw = parts[parts.length-1].trim(); 
-                                }
-                            } else {
-                                const lastSpaceIndex = line.lastIndexOf(' ');
-                                if (lastSpaceIndex !== -1) {
-                                    studentName = line.substring(0, lastSpaceIndex).trim();
-                                    classNameRaw = line.substring(lastSpaceIndex).trim();
-                                }
-                            }
-
-                            if (!studentName || !classNameRaw) continue;
-                            studentName = studentName.replace(/^[0-9.\-\s]+/, '').trim();
-                            if(studentName && /^[789][A-Z]$/.test(classNameRaw.toUpperCase())) {
-                                const isDuplicate = studentsToAdd.some(s => 
-                                    s.name.toUpperCase() === studentName.toUpperCase() && 
-                                    s.className === classNameRaw.toUpperCase()
-                                );
-                                if (!isDuplicate) {
-                                    studentsToAdd.push({ name: studentName, className: classNameRaw.toUpperCase() });
-                                    console.log(`  ✓ Fallback added: ${studentName} (${classNameRaw.toUpperCase()})`);
-                                }
-                            }
-                        }
-                    }
-
-                    console.log('Total students to add:', studentsToAdd.length);
-                    console.log('Students list:', studentsToAdd);
 
                     if (studentsToAdd.length === 0) {
                         showMessage("Gagal membaca format! Pastikan ada format Nama dan Kelas (Angka & Huruf).", "Error");
                         setIsSaving(false);
-                        console.log('===== DEBUG IMPORT END (NO DATA) =====');
                         return;
                     }
 
                     let count = 0;
                     const localClassesRef = [...data.classes]; 
-                    const localStudentsTrack = new Set(data.students.map(s => `${s.name.toUpperCase()}_${s.classId}`));
-
-                    console.log('Existing classes:', localClassesRef);
-                    console.log('Existing students:', localStudentsTrack);
+                    const localStudentsTrack = new Set(data.students.map(s => `${(s.name || '').toUpperCase()}_${s.classId}`));
 
                     for (const s of studentsToAdd) {
                         const targetClassName = s.className;
-                        let targetClass = localClassesRef.find(c => c.name.toUpperCase() === targetClassName);
+                        let targetClass = localClassesRef.find(c => c && c.name && c.name.toUpperCase() === targetClassName);
                         let classId = targetClass?.id;
                         
                         if (!targetClass) {
                             const newClassRef = await addDoc(collection(db, 'classes'), { name: targetClassName, isActive: true, createdAt: Date.now() });
                             classId = newClassRef.id;
                             localClassesRef.push({ id: classId, name: targetClassName, isActive: true });
-                            console.log('Created new class', targetClassName, 'with ID', classId);
                             await new Promise(resolve => setTimeout(resolve, 300)); 
                         } else if (targetClass.isActive === false) {
                             await updateDoc(doc(db, 'classes', classId), { isActive: true });
                             targetClass.isActive = true;
-                            console.log('Activated existing class', targetClassName);
                             await new Promise(resolve => setTimeout(resolve, 300));
                         }
                         
-                        const studentKey = `${s.name.toUpperCase()}_${classId}`;
-                        
+                        const studentKey = `${s.name.toUpperCase().trim()}_${classId}`;
+
                         if (!localStudentsTrack.has(studentKey)) {
-                            const result = await addDoc(collection(db, 'students'), { name: s.name, classId, createdAt: Date.now() });
-                            console.log('Added student', s.name, 'to class', classId, 'with ID', result.id);
+                            await addDoc(collection(db, 'students'), { name: s.name, classId, createdAt: Date.now() });
                             localStudentsTrack.add(studentKey);
                             count++;
-                            
-                            setTxt(`MEMPROSES PENYIMPANAN LOKAL...\nSedang menyimpan: ${count} dari ${studentsToAdd.length} siswa.\n\nData ini disimpan di browser Anda, bukan di sheet atau firebase...`);
                             await new Promise(resolve => setTimeout(resolve, 350));
-                        } else {
-                            console.log('Student already exists:', s.name);
                         }
                     }
                     
-                    console.log('Finished adding', count, 'new students');
-                    console.log('LOCAL_DATA.students after import:', LOCAL_DATA.students);
-                    console.log('LOCAL_DATA.classes after import:', LOCAL_DATA.classes);
-                    
-                    // Force refresh data dari Supabase untuk memastikan sinkronisasi
                     if (supabase) {
                         try {
                             const [classesData, studentsData] = await Promise.all([
                                 fetchSupabaseData('classes'),
                                 fetchSupabaseData('students')
                             ]);
-                            console.log('Supabase classes:', classesData);
-                            console.log('Supabase students:', studentsData);
-                            
                             if (classesData && Array.isArray(classesData)) {
                                 LOCAL_DATA.classes = classesData.map(c => ({ id: c.id, name: c.name, isActive: c.isActive !== false }));
                             }
@@ -2081,61 +2031,48 @@
                     }
                     
                     notifyListeners();
-                    
-                    console.log('===== DEBUG IMPORT END (SUCCESS) =====');
-                    console.log('Final LOCAL_DATA:', LOCAL_DATA);
-                    
                     showMessage(`Import ${count} siswa berhasil disimpan ke database!`, "Sukses"); 
                     setTxt(''); 
                     setShowImport(false);
-                    
-                    // Reload halaman untuk memastikan data ter-sync sempurna
                     setTimeout(() => window.location.reload(), 1500);
                 } catch (e) {
-                    console.error('===== DEBUG IMPORT ERROR =====', e);
                     showMessage("Terjadi kesalahan import: " + e.message, "Error");
                 } finally {
                     setIsSaving(false);
                 }
             };
 
-           return (
-                <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in pt-8">
+            // FUNGSI BARU: Edit & Hapus Master Siswa
+            const handleEditStudent = (student) => {
+                setEditingStudentId(student.id);
+                setEditStudentName(student.name);
+                setEditStudentClassId(student.classId);
+            };
+
+            const handleSaveEditStudent = async () => {
+                if(!editStudentName.trim() || !editStudentClassId) return;
+                await updateDoc(doc(db, 'students', editingStudentId), {
+                    name: editStudentName.trim(),
+                    student_name: editStudentName.trim(),
+                    classId: editStudentClassId,
+                    class_id: editStudentClassId
+                });
+                setEditingStudentId(null);
+                showMessage("Data siswa berhasil diperbarui!", "Sukses");
+            };
+
+            const handleDeleteStudentMaster = (id) => {
+                showConfirm("Yakin ingin menghapus siswa ini secara permanen dari database?", async () => {
+                    await deleteDoc(doc(db, 'students', id));
+                    showMessage("Siswa berhasil dihapus.", "Sukses");
+                });
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in pt-8">
                     <div className="border-b border-white/5 pb-6">
                         <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Settings className="text-indigo-400" /> Ruang Admin</h2>
-                        <p className="text-slate-400 mt-1">Pusat Kendali Admin, Sinkronisasi Realtime, & Informasi Integrasi Aplikasi.</p>
-                    </div>
-
-                    {/* BLOK BARU: PUSAT PINTASAN INTEGRASI KONSOL PROJEK */}
-                    <div className="bg-[#0b1126]/90 border border-white/10 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 p-24 opacity-5 bg-gradient-to-br from-indigo-500 to-purple-500 blur-2xl"></div>
-                        <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Key size={20} className="text-indigo-400"/> Pintasan Pengembang (Dasbor Arsitek)</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <a href="https://github.com/gagataditya-create/DAFTAR-NILAI-APP" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">GitHub Daftar Nilai APP</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Konsol &rarr;</span>
-                            </a>
-                            <a href="https://dash.cloudflare.com/c22ee62db8d5e590a81eca9ca715de93/workers/services/view/daftarnilaispenday/production" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Cloudflare Worker Dasbor</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Konsol &rarr;</span>
-                            </a>
-                            <a href="https://daftarnilaispenday.gagataditya94.workers.dev/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Alamat URL Aplikasi Live</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Link &rarr;</span>
-                            </a>
-                            <a href="https://supabase.com/dashboard/project/qtnmvphffxfnwgbkhtwh/sql/b6389541-c37d-4beb-b6fd-85ef709e181b" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Supabase SQL Dashboard</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Gudang &rarr;</span>
-                            </a>
-                            <a href="https://gemini.google.com/u/1/app/9b4cd816fc61b2a3?pageId=none" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Gemini Pandu AI Collaborator</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Chat &rarr;</span>
-                            </a>
-                            <a href="https://docs.google.com/spreadsheets/d/1X7zPzMKXceFxW3PsjIu16lj2JhauZcGPU_JaWmADyYs/edit?gid=1540998902#gid=1540998902" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-white/5 rounded-xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all group">
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-white">Google Sheet Master Data</span>
-                                <span className="text-[11px] text-indigo-400 font-mono font-bold">Buka Sheet &rarr;</span>
-                            </a>
-                        </div>
+                        <p className="text-slate-400 mt-1">Pusat Kendali Admin, Sinkronisasi Realtime, & Manajemen Master Data.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
@@ -2151,7 +2088,7 @@
                             </button>
 
                             <button onClick={handleDeleteAllStudentsAndGrades} className="w-full bg-red-950/40 border border-red-500/30 text-red-400 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-red-600 hover:text-white transition-all">
-                                <Trash2 size={18} /> KOSONGKAN TOTAL DATA SISWA & NILAI LAMA
+                                <Trash2 size={18} /> KOSONGKAN TOTAL DATA SISWA & NILAI
                             </button>
                         </div>
 
@@ -2159,31 +2096,131 @@
                             <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Users size={20} className="text-emerald-400"/> Master Data Siswa</h3>
                             
                             <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-sm text-emerald-200">
-                                Perbarui atau tambahkan database siswa seluruh kelas secara massal dari sini. Data otomatis tersinkronisasi realtime ke semua portal guru.
+                                Perbarui database siswa seluruh kelas secara massal. Sistem otomatis mencegah data ganda.
                             </div>
 
                             <button onClick={() => setShowImport(true)} className="w-full mt-4 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 py-4 rounded-xl font-bold flex justify-center items-center gap-3 hover:bg-emerald-600 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                                <Clipboard size={22} /> PORTAL IMPORT EXCEL DATA SISWA
+                                <FileSpreadsheet size={22} /> IMPOR DARI FILE EXCEL (.CSV)
+                            </button>
+
+                            <button onClick={handleDownloadTemplate} className="w-full mt-3 bg-slate-800/50 border border-white/10 text-slate-400 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all">
+                                <Download size={18} /> DOWNLOAD FORMAT TEMPLATE
                             </button>
                         </div>
                     </div>
 
-                    {/* MODAL IMPORT */}
+                    {/* TABEL BARU: DAFTAR MASTER SISWA */}
+                    <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md mt-6">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h3 className="font-bold text-white text-lg flex items-center gap-2"><Users size={20} className="text-blue-400"/> Tabel Master Siswa</h3>
+                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                <input type="text" placeholder="Cari nama siswa..." value={searchStudent} onChange={e => setSearchStudent(e.target.value)} className="bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white text-sm outline-none focus:border-indigo-500 w-full sm:w-48" />
+                                <select value={studentFilterClass} onChange={e => setStudentFilterClass(e.target.value)} className="bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white text-sm outline-none focus:border-indigo-500 cursor-pointer">
+                                    <option value="ALL">Semua Kelas</option>
+                                    {data.classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div className="overflow-x-auto custom-scrollbar border border-white/5 rounded-xl">
+                            <table className="w-full text-left border-collapse min-w-max">
+                                <thead className="bg-slate-950">
+                                    <tr>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 w-12 text-center">No</th>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10">Nama Siswa</th>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10">Kelas</th>
+                                        <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-28">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.students
+                                        .filter(s => studentFilterClass === 'ALL' || s.classId === studentFilterClass)
+                                        .filter(s => (s.name || '').toLowerCase().includes(searchStudent.toLowerCase()))
+                                        .map((s, idx) => (
+                                        <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50">
+                                            <td className="p-4 text-slate-500 font-mono text-sm text-center">{idx + 1}</td>
+                                            <td className="p-4">
+                                                {editingStudentId === s.id ? (
+                                                    <input type="text" value={editStudentName} onChange={e => setEditStudentName(e.target.value)} className="w-full bg-slate-950 border border-indigo-500 px-3 py-2 rounded-lg text-white text-sm outline-none" autoFocus />
+                                                ) : (
+                                                    <span className="text-slate-200 font-medium text-sm">{s.name}</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4">
+                                                {editingStudentId === s.id ? (
+                                                    <select value={editStudentClassId} onChange={e => setEditStudentClassId(e.target.value)} className="bg-slate-950 border border-indigo-500 px-3 py-2 rounded-lg text-white text-sm outline-none cursor-pointer">
+                                                        {data.classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <span className="text-slate-400 text-sm font-bold bg-white/5 px-2.5 py-1.5 rounded">{data.classes.find(c => c.id === s.classId)?.name || '-'}</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                {editingStudentId === s.id ? (
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button onClick={() => setEditingStudentId(null)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg"><X size={16}/></button>
+                                                        <button onClick={handleSaveEditStudent} className="p-2 text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg"><Check size={16}/></button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button onClick={() => handleEditStudent(s)} className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"><Pencil size={16}/></button>
+                                                        <button onClick={() => handleDeleteStudentMaster(s.id)} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {data.students.length === 0 && <p className="text-slate-500 text-center py-8 text-sm">Data siswa masih kosong. Silakan impor dari Excel.</p>}
+                        </div>
+                    </div>
+
+                    {/* MODAL IMPORT FILE UPLOAD */}
                     {showImport && (
                         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
                         <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
                             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Clipboard className="text-emerald-400"/> Paste Data Excel</h3>
-                                <button onClick={() => setShowImport(false)} className="text-slate-400 hover:text-white"><X/></button>
+                                <h3 className="font-bold text-white text-lg flex items-center gap-2"><FileSpreadsheet className="text-emerald-400"/> Upload File CSV</h3>
+                                <button onClick={() => {setShowImport(false); setTxt('');}} className="text-slate-400 hover:text-white"><X/></button>
                             </div>
                             <div className="p-6 flex-1 overflow-auto">
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs text-emerald-300 mb-4 font-mono">
-                                Tempelkan data seluruh siswa di sini!<br/><br/>Format yang diterima:<br/>• <strong>BUDI 9A ANDI 9B</strong> (per baris atau 1 baris)<br/>• <strong>BUDI,9A</strong> (dengan koma)<br/>• <strong>BUDI&nbsp;&nbsp;9A</strong> (dengan tab/spasi)<br/><br/>✓ Kelas: 7A-7Z, 8A-8Z, 9A-9Z
-                            </div>
-                            <textarea value={txt} onChange={e => setTxt(e.target.value)} className="w-full h-64 p-4 bg-slate-950 border border-white/10 rounded-xl font-mono text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none custom-scrollbar" placeholder="Paste data siswa disini..."></textarea>
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs text-emerald-300 mb-4 font-mono">
+                                    Pastikan Anda menggunakan format dari tombol "Download Format Template".<br/><br/>
+                                    Sistem akan otomatis <b>melewati (skip)</b> nama siswa yang sudah pernah dimasukkan ke dalam kelas yang sama untuk mencegah data ganda.
+                                </div>
+                                
+                                <div className="w-full p-8 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center bg-slate-950/50 hover:bg-slate-900 transition-colors relative">
+                                    <Upload size={32} className="text-slate-500 mb-3" />
+                                    <p className="text-sm font-bold text-slate-300 mb-1">Pilih file .CSV Anda</p>
+                                    <p className="text-xs text-slate-500 mb-4">Klik di sini untuk mencari file</p>
+                                    
+                                    <input 
+                                        type="file" 
+                                        accept=".csv" 
+                                        onChange={handleFileUpload} 
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    
+                                    {txt ? (
+                                        <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                            <Check size={14}/> File Siap Diproses
+                                        </span>
+                                    ) : (
+                                        <span className="bg-slate-800 text-slate-400 px-4 py-2 rounded-lg text-xs font-bold border border-white/5">
+                                            Browse File
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                {isSaving && (
+                                    <div className="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                                        <p className="text-xs text-indigo-300 font-mono text-center">Menyimpan data, mohon tunggu...</p>
+                                    </div>
+                                )}
                             </div>
                             <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button onClick={handleImport} disabled={isSaving} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 shadow-lg transition-all disabled:opacity-50">
+                            <button onClick={handleImport} disabled={isSaving || !txt} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 shadow-lg transition-all disabled:opacity-50">
                                 {isSaving ? 'MEMPROSES...' : 'PROSES DATA'}
                             </button>
                             </div>
@@ -2193,7 +2230,6 @@
                 </div>
             );
         }
-
         try {
             const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(<ArtGradesApp />);
