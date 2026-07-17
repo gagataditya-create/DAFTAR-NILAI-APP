@@ -1,3 +1,6 @@
+Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membuat draf dan menyempurnakan konten, serta dapatkan Gemini Pro dengan akses ke AI generasi berikutnya dari Google
+1
+100%
 -- Minimal schema for the current nilai-app
 -- Run this in Supabase SQL Editor.
 
@@ -82,17 +85,22 @@ alter table public.assessments enable row level security;
 alter table public.grades enable row level security;
 alter table public.teachers enable row level security;
 
-create policy if not exists "Allow public read/write" on public.classes
+drop policy if exists "Allow public read/write" on public.classes;
+create policy "Allow public read/write" on public.classes
   for all using (true) with check (true);
 
-create policy if not exists "Allow public read/write" on public.students
+drop policy if exists "Allow public read/write" on public.students;
+create policy "Allow public read/write" on public.students
   for all using (true) with check (true);
 
-create policy if not exists "Allow public read/write" on public.assessments
+drop policy if exists "Allow public read/write" on public.assessments;
+create policy "Allow public read/write" on public.assessments
   for all using (true) with check (true);
 
-create policy if not exists "Allow public read/write" on public.grades
+drop policy if exists "Allow public read/write" on public.grades;
+create policy "Allow public read/write" on public.grades
   for all using (true) with check (true);
 
-create policy if not exists "Allow public read/write" on public.teachers
+drop policy if exists "Allow public read/write" on public.teachers;
+create policy "Allow public read/write" on public.teachers
   for all using (true) with check (true);
