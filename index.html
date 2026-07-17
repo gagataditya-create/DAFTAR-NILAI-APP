@@ -121,6 +121,7 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
         }
 
         // --- KONFIGURASI MULTI-GURU (DENGAN ROLE ADMIN) ---
+        // Sisa kode dibersihkan, hanya menyisakan 1 Master Admin sebagai Fallback darurat
         const FALLBACK_TEACHER_PROFILES = {
             'gagat': {
                 id: 'gagat',
@@ -144,83 +145,6 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                 themeTo: 'to-cyan-600',
                 defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
             },
-            'sefri_bk': {
-                id: 'sefri_bk',
-                name: 'SEFRI BAYU ADI, S.Pd',
-                subject: 'BK',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <BookOpen size={24} />,
-                themeFrom: 'from-blue-600',
-                themeTo: 'to-cyan-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            },
-            'nasiah_bk': {
-                id: 'nasiah_bk',
-                name: 'NASIAH KHOEROTUL, S.Pd',
-                subject: 'BK',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <BookA size={24} />,
-                themeFrom: 'from-emerald-600',
-                themeTo: 'to-teal-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            },
-            'slamet_informatika': {
-                id: 'slamet_informatika',
-                name: 'SLAMET SUPRIYANTO, S.KM',
-                subject: 'Informatika',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <Percent size={24} />,
-                themeFrom: 'from-slate-600',
-                themeTo: 'to-violet-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            },
-            'rohadi_bahasa_jawa': {
-                id: 'rohadi_bahasa_jawa',
-                name: 'ROHADI ALFARIS, S.Pd',
-                subject: 'Bahasa Jawa',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <PenTool size={24} />,
-                themeFrom: 'from-orange-600',
-                themeTo: 'to-amber-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            },
-            'miftachul_bk': {
-                id: 'miftachul_bk',
-                name: 'MIFTACHUL ABDILLAH, S.Pd',
-                subject: 'BK',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <LayoutGrid size={24} />,
-                themeFrom: 'from-emerald-600',
-                themeTo: 'to-lime-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            },
-            'erlynna_pp': {
-                id: 'erlynna_pp',
-                name: 'ERLYNNA AISYAH WARDANI, S.Pd',
-                subject: 'PP',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <ShieldAlert size={24} />,
-                themeFrom: 'from-fuchsia-600',
-                themeTo: 'to-pink-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            },
-            'agita_pp': {
-                id: 'agita_pp',
-                name: 'AGITA VERANIKA PUTRI, S.Pd',
-                subject: 'PP',
-                password: 'guru123',
-                isAdmin: false,
-                icon: <Key size={24} />,
-                themeFrom: 'from-rose-600',
-                themeTo: 'to-red-600',
-                defaultApiUrl: 'https://script.google.com/macros/s/AKfycbxzdBGnU7fNZvFrDE-FCwCa4BUkdFTGF3X4PIP1i6b81Oluht7KtRYfyFpHmfMrDOal/exec'
-            }
         };
 
         // --- ADAPTOR DATA LOKAL (OFFLINE) ---
@@ -247,8 +171,8 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
             }));
         };
         const SUPABASE_URL = 'https://tlmumxzflyqteaaojrdo.supabase.co';
-const activeApiKey = 'sb_publishable_QDyPlVZJUclUQMkG2pzvLw_RnCpWu_1';
-const SUPABASE_ANON_KEY = activeApiKey;
+        const activeApiKey = 'sb_publishable_QDyPlVZJUclUQMkG2pzvLw_RnCpWu_1';
+        const SUPABASE_ANON_KEY = activeApiKey;
 
         const createSupabaseClient = () => {
             try {
@@ -351,16 +275,15 @@ const SUPABASE_ANON_KEY = activeApiKey;
             if (tableName === 'students') {
                 if (normalized.name !== undefined) {
                     normalized.student_name = normalized.name;
-                    // Jangan hapus normalized.name karena Supabase butuh kolom 'name' juga
                 }
                 if (normalized.id !== undefined) {
-                    normalized.nis = normalized.id; // Samakan nilai nis dengan id
+                    normalized.nis = normalized.id;
                 }
                 if (Object.prototype.hasOwnProperty.call(payload, 'classId')) {
                     normalized.class_id = normalized.class_id ?? normalized.classid;
                     delete normalized.classid;
                 }
-                normalized.is_active = true; // Wajib diset true agar sesuai struktur Supabase
+                normalized.is_active = true;
             }
             if (tableName === 'assessments' && Object.prototype.hasOwnProperty.call(payload, 'maxScore')) {
                 normalized.max_score = normalized.max_score ?? normalized.maxscore;
@@ -379,13 +302,10 @@ const SUPABASE_ANON_KEY = activeApiKey;
         const verifyTeacherPassword = async (profile, password) => {
             if (!profile) return false;
             
-            // Pengecekan untuk admin
-            if (profile.isAdmin) {
-                return password === 'monalisa';
-            }
-            
-            // Pengecekan untuk guru lainnya
-            return password === 'guru123';
+            // Pengecekan admin dan guru dinamis berdasarkan data database
+            // Jika ada password dari database, gunakan itu. Jika kosong, gunakan default
+            const correctPassword = profile.password || (profile.isAdmin ? 'monalisa' : 'guru123');
+            return password === correctPassword;
         };
 
         const fetchSupabaseData = async (tableName) => {
@@ -422,7 +342,6 @@ const SUPABASE_ANON_KEY = activeApiKey;
                     result = await supabase.from(tableName).upsert([payload]).select('*').single();
                 }
                 
-                // SISTEM X-RAY: Tangkap error dari Supabase dan tampilkan pop-up
                 if (result && result.error) {
                     alert(`🚨 ERROR BACA SUPABASE!\nTabel: ${tableName}\nPesan: ${result.error.message}\nPayload: ${JSON.stringify(payload)}`);
                     console.error("Payload yang gagal:", payload);
@@ -444,7 +363,6 @@ const SUPABASE_ANON_KEY = activeApiKey;
                 
                 if (supabaseData && supabaseData.length >= 0) {
                     console.log('✅ onSnapshot: Menggunakan Supabase data untuk', tableName);
-                    // Khusus tabel grades, paksa Supabase sinkron dengan memori lokal HP/TV
                     if (tableName === 'grades') {
                         const newGrades = {};
                         supabaseData.forEach(item => {
@@ -468,7 +386,6 @@ const SUPABASE_ANON_KEY = activeApiKey;
                     return;
                 }
 
-                // Fallback jika koneksi internet terputus atau data lokal
                 console.log('⚠️ onSnapshot: Fallback ke LOCAL_DATA untuk', tableName);
                 if (tableName === 'grades') {
                     const docs = Object.entries(state.grades || {}).map(([id, score]) => {
@@ -524,13 +441,13 @@ const SUPABASE_ANON_KEY = activeApiKey;
                         id: row.id || row.username || row.name || fallbackProfile.id || 'unknown',
                         name: row.name || row.username || fallbackProfile.name || 'Guru',
                         subject: row.subject || fallbackProfile.subject || 'Umum',
-                        password: fallbackProfile.password || '',
+                        password: row.password || fallbackProfile.password || '',
                         passwordHash: row.passwordHash || fallbackProfile.passwordHash || null,
                         isAdmin: fallbackProfile.isAdmin === true || row.isAdmin === true,
-                        icon: row.icon ? row.icon : fallbackProfile.icon || fallback.gagat.icon,
+                        icon: row.icon ? row.icon : fallbackProfile.icon || fallback.gagat?.icon,
                         themeFrom: row.themeFrom || fallbackProfile.themeFrom || 'from-indigo-600',
                         themeTo: row.themeTo || fallbackProfile.themeTo || 'to-purple-600',
-                        defaultApiUrl: row.defaultApiUrl || fallbackProfile.defaultApiUrl || fallback.gagat.defaultApiUrl,
+                        defaultApiUrl: row.defaultApiUrl || fallbackProfile.defaultApiUrl || fallback.gagat?.defaultApiUrl,
                         targetMin7: row.target_min_7 !== undefined ? row.target_min_7 : 77,
                         targetMax7: row.target_max_7 !== undefined ? row.target_max_7 : 91,
                         targetMin8: row.target_min_8 !== undefined ? row.target_min_8 : 79,
@@ -674,17 +591,24 @@ const SUPABASE_ANON_KEY = activeApiKey;
                 const loadTeachers = async () => {
                     const profiles = await getTeacherProfiles();
                     setTeacherProfiles(profiles);
+                    // Update pilihan default jika gagat tidak ada (bisa saja sudah dihapus)
+                    if (Object.keys(profiles).length > 0 && !profiles['gagat']) {
+                        setSelectedTeacherId(Object.keys(profiles)[0]);
+                    }
                 };
                 loadTeachers();
 
                 const savedSessionId = localStorage.getItem('seru_active_session_id');
-                if (savedSessionId && teacherProfiles[savedSessionId]) {
-                    const profile = teacherProfiles[savedSessionId];
-                    initDb().then(() => {
-                        setAuthUser(profile);
-                        setActiveTab(profile.isAdmin ? 'settings' : 'dashboard');
+                if (savedSessionId) {
+                    getTeacherProfiles().then(profiles => {
+                        if (profiles[savedSessionId]) {
+                            const profile = profiles[savedSessionId];
+                            initDb().then(() => {
+                                setAuthUser(profile);
+                                setActiveTab(profile.isAdmin ? 'settings' : 'dashboard');
+                            });
+                        }
                     });
-                    return;
                 }
             }, []);
 
@@ -695,13 +619,12 @@ const SUPABASE_ANON_KEY = activeApiKey;
                     onSnapshot(query(collection(db, 'classes'), orderBy('name')), s => 
                         setData(p => ({ ...p, classes: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
                     onSnapshot(query(collection(db, 'students'), orderBy('name')), s => {
-    // Menarik data lalu mengurutkannya berdasarkan abjad nama (A-Z)
-    const sortedStudents = s.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'id'));
-        
-    setData(p => ({ ...p, students: sortedStudents }));
-}),
+                        // Menarik data lalu mengurutkannya berdasarkan abjad nama (A-Z)
+                        const sortedStudents = s.docs
+                            .map(d => ({ id: d.id, ...d.data() }))
+                            .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'id'));
+                        setData(p => ({ ...p, students: sortedStudents }));
+                    }),
                     onSnapshot(query(collection(db, 'assessments'), orderBy('createdAt')), s => 
                         setData(p => ({ ...p, assessments: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
                     onSnapshot(query(collection(db, 'grades')), s => {
@@ -820,7 +743,7 @@ const SUPABASE_ANON_KEY = activeApiKey;
                             </form>
                             
                             <div className="mt-8 text-center border-t border-white/5 pt-4">
-                                <p className="text-[10px] text-slate-600 font-mono tracking-widest">VERSI MULTI-DATABASE // V2.3</p>
+                                <p className="text-[10px] text-slate-600 font-mono tracking-widest">VERSI MULTI-DATABASE // V2.4</p>
                             </div>
                         </div>
                     </div>
@@ -1108,7 +1031,7 @@ const SUPABASE_ANON_KEY = activeApiKey;
                             ) : (
                                 <div className="p-4 bg-slate-950/40 border border-white/5 rounded-xl text-xs text-slate-400 mb-6 flex items-center gap-2">
                                     <Lock size={14} className="text-indigo-400" />
-                                    <span>Menu tambah atau hapus siswa dinonaktifkan. Manajemen siswa dikunci oleh Admin Sekolah (Bpk. Gagat).</span>
+                                    <span>Menu tambah atau hapus siswa dinonaktifkan. Manajemen siswa dikunci oleh Admin Sekolah.</span>
                                 </div>
                             )}
 
@@ -1132,8 +1055,8 @@ const SUPABASE_ANON_KEY = activeApiKey;
             );
         }
 
-       // --- ASSESSMENTS VIEW ---
-function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
+        // --- ASSESSMENTS VIEW ---
+        function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
             const [title, setTitle] = useState('');
             const [desc, setDesc] = useState('');
             const [weight, setWeight] = useState(1); 
@@ -1153,13 +1076,12 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 });
             }, [data.assessments, authUser.id, activeGrade]);
 
-         const handleAdd = async (e) => {
+            const handleAdd = async (e) => {
                 e.preventDefault();
                 if(!title.trim()) return;
 
                 const customId = generateId() + '-' + authUser.id + '-' + activeGrade;
 
-                // PENGAMAN & ALARM ERROR: Kita ketuk pintu Supabase secara langsung terlebih dahulu
                 if (supabase) {
                     const { error } = await supabase.from('assessments').insert([{
                         id: customId,
@@ -1170,14 +1092,12 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                         weight: Number(weight)
                     }]);
 
-                    // Jika Supabase menolak, hentikan proses dan tampilkan alasannya ke layar Pak Gagat!
                     if (error) {
                         showMessage("ALASAN PENOLAKAN SUPABASE: " + error.message, "Gagal Tersimpan di Gudang");
                         return; 
                     }
                 }
 
-                // Jika sukses diterima Supabase, baru kita simpan di layar
                 await addDoc(collection(db, 'assessments'), { 
                     _customId: customId,
                     title: title.trim(), 
@@ -1203,7 +1123,7 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 if(!editForm.title.trim()) return;
                 await updateDoc(doc(db, 'assessments', editingId), {
                     title: editForm.title.trim(),
-                    assessment_title: editForm.title.trim(), // Pembaruan nama kolom lama
+                    assessment_title: editForm.title.trim(),
                     description: editForm.desc.trim(),
                     weight: Number(editForm.weight)
                 });
@@ -1324,6 +1244,17 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId]);
 
+            // LOGIKA BARU: Mengelompokkan materi berdasarkan Judul yang sama persis
+            const groupedAssessments = useMemo(() => {
+                const groups = {};
+                myFilteredAssessments.forEach(a => {
+                    const t = a.title.trim().toUpperCase();
+                    if(!groups[t]) groups[t] = { originalTitle: a.title, items: [] };
+                    groups[t].items.push(a);
+                });
+                return Object.values(groups);
+            }, [myFilteredAssessments]);
+
             const classStudents = data.students.filter(s => s.classId === selectedClassId);
 
             useEffect(() => {
@@ -1345,13 +1276,11 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 const score = localGrades[`${studentId}_${assId}`];
                 const id = `${studentId}_${assId}`;
                 
-                // PENGAMAN BARU: Jika nilai dihapus (kosong), perintahkan database untuk menghancurkannya
                 if(score === undefined || score === '') {
                     await deleteDoc(doc(db, 'grades', id));
                     return;
                 }
                 
-                // Jika ada isinya, simpan atau perbarui seperti biasa
                 await setDoc(doc(db, 'grades', id), { studentId, assessmentId: assId, score: Number(score), updatedAt: Date.now() });
             };
 
@@ -1377,7 +1306,6 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 return Math.round(totalWeightedScore / totalWeight);
             };
 
-            // LOGIKA SMART PASTE MULTI-BARIS
             const handlePasteToTable = async (e, startRowIdx, targetAssId) => {
                 const pasteData = e.clipboardData.getData('text');
                 if (!pasteData) return;
@@ -1478,12 +1406,29 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                                     <tr>
                                         <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 w-8 md:w-12 text-center shrink-0">No</th>
                                         <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Nama Siswa</th>
-                                        {myFilteredAssessments.map(a => (
-                                            <th key={a.id} className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center min-w-[80px] md:min-w-[120px]">
-                                                <div className="truncate w-full" title={a.title}>{a.title}</div>
-                                                <span className="text-[9px] md:text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">W: {a.weight||1}</span>
-                                            </th>
+                                        
+                                        {/* Menggunakan groupedAssessments untuk header */}
+                                        {groupedAssessments.map(group => (
+                                            <React.Fragment key={group.originalTitle}>
+                                                {group.items.map(a => (
+                                                    <th key={a.id} className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center min-w-[80px] md:min-w-[120px]">
+                                                        <div className="truncate w-full text-slate-200" title={a.title}>{a.title}</div>
+                                                        <div className="text-[9px] text-slate-500 font-normal truncate mt-0.5 w-full max-w-[100px] mx-auto" title={a.description || 'Tidak ada keterangan'}>
+                                                            {a.description || '-'}
+                                                        </div>
+                                                        <span className="text-[9px] md:text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">W: {a.weight||1}</span>
+                                                    </th>
+                                                ))}
+                                                
+                                                {/* Kolom Rata-rata otomatis jika materi lebih dari 1 */}
+                                                {group.items.length > 1 && (
+                                                    <th className="p-2 md:p-4 text-blue-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center bg-blue-500/5 min-w-[70px] md:min-w-[90px] border-l border-blue-500/20 shadow-[inset_2px_0_5px_-2px_rgba(0,0,0,0.2)]">
+                                                        AVG<br/>{group.originalTitle}
+                                                    </th>
+                                                )}
+                                            </React.Fragment>
                                         ))}
+
                                         <th className="p-2 md:p-4 text-indigo-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center bg-indigo-500/5 min-w-[60px] md:min-w-[80px]">NA</th>
                                     </tr>
                                 </thead>
@@ -1496,32 +1441,59 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                                         <tr key={s.id} className="border-b border-white/5 hover:bg-slate-800/50 transition-colors">
                                             <td className="p-2 md:p-4 text-slate-500 font-mono text-xs md:text-sm text-center">{idx + 1}</td>
                                             <td className="p-2 md:p-4 text-slate-200 font-medium text-xs md:text-sm whitespace-normal break-words leading-tight sticky left-0 bg-[#0b1126] z-10 border-r border-white/5 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{s.name}</td>
-                                            {myFilteredAssessments.map((a, colIdx) => {
-                                                const globalScore = data.grades[`${s.id}_${a.id}`];
-                                                const localScore = localGrades[`${s.id}_${a.id}`];
-                                                const isUnsaved = localScore !== undefined && localScore !== '' && Number(localScore) !== Number(globalScore);
+                                            
+                                            {groupedAssessments.map((group) => {
+                                                let sumGroup = 0;
+                                                let countGroup = 0;
                                                 
                                                 return (
-                                                <td key={a.id} className="p-1 md:p-2 text-center relative group">
-                                                    <input 
-                                                        type="number" min="0" max="100" 
-                                                        data-row={idx}
-                                                        data-col={colIdx}
-                                                        value={localScore !== undefined ? localScore : ''} 
-                                                        onChange={e => handleGradeChange(s.id, a.id, e.target.value)}
-                                                        onBlur={() => handleSave(s.id, a.id)}
-                                                        onPaste={(e) => handlePasteToTable(e, idx, a.id)}
-                                                        onKeyDown={(e) => handleKeyDown(e, idx, colIdx)}
-                                                        className={`w-full bg-transparent border-b-2 px-1 py-2 md:px-2 text-center font-bold text-sm md:text-base outline-none transition-all placeholder:text-slate-700
-                                                            ${isUnsaved ? 'border-yellow-500 text-yellow-400 bg-yellow-500/5' : 'border-transparent text-white focus:border-indigo-500 hover:border-white/20 focus:bg-indigo-500/10'}
-                                                            ${localScore !== undefined && Number(localScore) < 70 ? '!text-red-400' : ''}
-                                                        `}
-                                                        placeholder="-"
-                                                    />
-                                                    {isUnsaved && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>}
-                                                </td>
-                                                )
+                                                    <React.Fragment key={group.originalTitle}>
+                                                        {group.items.map((a) => {
+                                                            const globalScore = data.grades[`${s.id}_${a.id}`];
+                                                            const localScore = localGrades[`${s.id}_${a.id}`];
+                                                            const scoreToUse = localScore !== undefined && localScore !== '' ? Number(localScore) : globalScore;
+                                                            const isUnsaved = localScore !== undefined && localScore !== '' && Number(localScore) !== Number(globalScore);
+                                                            
+                                                            if (scoreToUse !== undefined) {
+                                                                sumGroup += Number(scoreToUse);
+                                                                countGroup++;
+                                                            }
+                                                            
+                                                            // Mencari index asli untuk navigasi tombol panah (keyboard)
+                                                            const colIdx = myFilteredAssessments.findIndex(ma => ma.id === a.id);
+                                                            
+                                                            return (
+                                                                <td key={a.id} className="p-1 md:p-2 text-center relative group">
+                                                                    <input 
+                                                                        type="number" min="0" max="100" 
+                                                                        data-row={idx}
+                                                                        data-col={colIdx}
+                                                                        value={localScore !== undefined ? localScore : ''} 
+                                                                        onChange={e => handleGradeChange(s.id, a.id, e.target.value)}
+                                                                        onBlur={() => handleSave(s.id, a.id)}
+                                                                        onPaste={(e) => handlePasteToTable(e, idx, a.id)}
+                                                                        onKeyDown={(e) => handleKeyDown(e, idx, colIdx)}
+                                                                        className={`w-full bg-transparent border-b-2 px-1 py-2 md:px-2 text-center font-bold text-sm md:text-base outline-none transition-all placeholder:text-slate-700
+                                                                            ${isUnsaved ? 'border-yellow-500 text-yellow-400 bg-yellow-500/5' : 'border-transparent text-white focus:border-indigo-500 hover:border-white/20 focus:bg-indigo-500/10'}
+                                                                            ${localScore !== undefined && Number(localScore) < 70 ? '!text-red-400' : ''}
+                                                                        `}
+                                                                        placeholder="-"
+                                                                    />
+                                                                    {isUnsaved && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>}
+                                                                </td>
+                                                            )
+                                                        })}
+                                                        
+                                                        {/* TAMPILKAN NILAI RATA-RATA JIKA ADA LEBIH DARI 1 TUGAS */}
+                                                        {group.items.length > 1 && (
+                                                            <td className="p-2 md:p-4 text-center font-black font-mono bg-blue-500/5 text-blue-400 text-sm md:text-base border-l border-blue-500/20 shadow-[inset_2px_0_5px_-2px_rgba(0,0,0,0.2)]">
+                                                                {countGroup > 0 ? Math.round(sumGroup / countGroup) : '-'}
+                                                            </td>
+                                                        )}
+                                                    </React.Fragment>
+                                                );
                                             })}
+
                                             <td className={`p-2 md:p-4 text-center font-black font-mono bg-indigo-500/5 text-sm md:text-lg ${naColor}`}>{naVal}</td>
                                         </tr>
                                     )})}
@@ -1538,11 +1510,10 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
 
         // --- RECAP VIEW (GABUNGAN LAPORAN & KONVERSI DENGAN JENJANG/PARALEL) ---
         function RecapView({ data, authUser, activeClasses, showMessage }) {
-            const [viewMode, setViewMode] = useState('class'); // 'class' atau 'jenjang'
+            const [viewMode, setViewMode] = useState('class');
             const [selectedClassId, setSelectedClassId] = useState(activeClasses[0]?.id || '');
-            const [selectedJenjang, setSelectedJenjang] = useState('9'); // Default kelas 9
+            const [selectedJenjang, setSelectedJenjang] = useState('9');
             
-            // Ambil jenjang aktif untuk menentukan laci KKM mana yang dipakai
             const activeGradeLevel = viewMode === 'class' 
                 ? (activeClasses.find(c => c.id === selectedClassId)?.name.charAt(0) || '9') 
                 : selectedJenjang;
@@ -1550,7 +1521,6 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
             const [targetMin, setTargetMin] = useState(authUser[`targetMin${activeGradeLevel}`] || 80);
             const [targetMax, setTargetMax] = useState(authUser[`targetMax${activeGradeLevel}`] || 95);
 
-            // Update KKM di layar setiap kali Bapak pindah kelas atau pindah mode jenjang
             useEffect(() => {
                 setTargetMin(authUser[`targetMin${activeGradeLevel}`] || (activeGradeLevel === '7' ? 77 : activeGradeLevel === '8' ? 79 : 80));
                 setTargetMax(authUser[`targetMax${activeGradeLevel}`] || (activeGradeLevel === '7' ? 91 : activeGradeLevel === '8' ? 93 : 95));
@@ -1568,11 +1538,9 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                     setTargetMax(newMax);
                 }
 
-                // Update memori lokal aplikasi (langsung mengunci ke jenjang yang sedang aktif)
                 authUser[`targetMin${activeGradeLevel}`] = Number(newMin);
                 authUser[`targetMax${activeGradeLevel}`] = Number(newMax);
 
-                // Kirim langsung ke kolom Gudang Supabase yang spesifik jenjangnya
                 if (supabase) {
                     const updatePayload = {};
                     updatePayload[`target_min_${activeGradeLevel}`] = Number(newMin);
@@ -1582,7 +1550,6 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 }
             };
 
-            // FILTER: Tabel rekap menyesuaikan materi dengan jenjang yang dipilih
             const myFilteredAssessments = useMemo(() => {
                 const targetGrade = viewMode === 'class' 
                     ? (activeClasses.find(c => c.id === selectedClassId)?.name.charAt(0) || '9') 
@@ -1597,17 +1564,25 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId, selectedJenjang, viewMode]);
 
-            // Tentukan siswa mana yang ditampilkan berdasarkan mode
             const displayedStudents = useMemo(() => {
+                let filtered = [];
                 if (viewMode === 'class') {
-                    return data.students.filter(s => s.classId === selectedClassId);
+                    filtered = data.students.filter(s => s.classId === selectedClassId);
                 } else {
                     const validClassIds = activeClasses.filter(c => c.name.startsWith(selectedJenjang)).map(c => c.id);
-                    return data.students.filter(s => validClassIds.includes(s.classId));
+                    filtered = data.students.filter(s => validClassIds.includes(s.classId));
                 }
+
+                return filtered.sort((a, b) => {
+                    const classA = activeClasses.find(c => c.id === a.classId)?.name || '';
+                    const classB = activeClasses.find(c => c.id === b.classId)?.name || '';
+                    
+                    if (classA !== classB) return classA.localeCompare(classB);
+                    
+                    return (a.name || '').localeCompare(b.name || '');
+                });
             }, [data.students, activeClasses, selectedClassId, selectedJenjang, viewMode]);
 
-            // Hitung nilai asli (original) dengan pembobotan
             const getOriginalScore = (studentId) => {
                 let totalWeightedScore = 0;
                 let totalWeight = 0;
@@ -1624,41 +1599,34 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 return hasScores && totalWeight > 0 ? (totalWeightedScore / totalWeight) : null;
             };
 
-            // Tambahkan properti originalScore ke setiap siswa
             const studentsWithOriginal = useMemo(() => {
                 return displayedStudents.map(s => ({ ...s, originalScore: getOriginalScore(s.id) }));
             }, [displayedStudents, data.grades, myFilteredAssessments]);
 
-            // PUSAT LOGIKA KONVERSI PARALEL (HANYA MENGGUNAKAN JENJANG/ANGKATAN)
             const { actualMin, actualMax } = useMemo(() => {
-                // 1. Tentukan jenjang apa yang sedang dibuka (contoh: '8')
                 const targetGrade = viewMode === 'class' 
                     ? (activeClasses.find(c => c.id === selectedClassId)?.name.charAt(0) || '9') 
                     : selectedJenjang;
 
-                // 2. Kumpulkan SEMUA siswa di seluruh kelas pada jenjang tersebut (Paralel)
                 const jenjangClassIds = activeClasses.filter(c => c.name.startsWith(targetGrade)).map(c => c.id);
                 const jenjangStudents = data.students.filter(s => jenjangClassIds.includes(s.classId));
 
-                // 3. Hitung nilai asli (original) dari populasi seluruh siswa paralel
                 const jenjangScores = jenjangStudents.map(s => getOriginalScore(s.id)).filter(val => val !== null);
                 
                 if (jenjangScores.length === 0) return { actualMin: 0, actualMax: 0 };
                 
-                // 4. Tetapkan Min dan Max Aktual dari populasi PARALEL (sehingga konversi adil 1 angkatan)
                 return {
                     actualMin: Math.min(...jenjangScores),
                     actualMax: Math.max(...jenjangScores)
                 };
             }, [data.students, activeClasses, selectedClassId, selectedJenjang, viewMode, myFilteredAssessments, data.grades]);
 
-            // Rumus Konversi
             const convertScore = (original) => {
                 if (original === null) return null;
                 if (actualMax === actualMin) return Number(targetMax); 
                 const ratio = (original - actualMin) / (actualMax - actualMin);
                 const converted = Number(targetMin) + (ratio * (Number(targetMax) - Number(targetMin)));
-                return Math.round(converted); // Dibulatkan agar bersih
+                return Math.round(converted);
             };
 
             const handleDownloadCSV = () => {
@@ -1854,7 +1822,7 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
             );
         }
 
-       // --- SETTINGS VIEW (KHUSUS ADMIN) ---
+        // --- SETTINGS VIEW (KHUSUS ADMIN) ---
         function SettingsView({ authUser, data, showMessage, showConfirm }) {
             const [urlInput, setUrlInput] = useState(activeApiKey || '');
             const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('seru_master_sheet_url') || 'https://docs.google.com/spreadsheets/d/1AgvT6eVfMCQvuvyJ1XOBRGst1luByFE05Qq2DkG3DsY/edit');
@@ -1862,12 +1830,27 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
             const [txt, setTxt] = useState('');
             const [isSaving, setIsSaving] = useState(false);
 
-            // STATE BARU: Untuk Tabel Master Siswa
+            // STATE: Tabel Master Siswa
             const [studentFilterClass, setStudentFilterClass] = useState('ALL');
             const [editingStudentId, setEditingStudentId] = useState(null);
             const [editStudentName, setEditStudentName] = useState('');
             const [editStudentClassId, setEditStudentClassId] = useState('');
             const [searchStudent, setSearchStudent] = useState('');
+
+            // STATE BARU: Manajemen Guru
+            const [teacherList, setTeacherList] = useState([]);
+            const [showAddTeacher, setShowAddTeacher] = useState(false);
+            const [newTeacher, setNewTeacher] = useState({ id: '', name: '', subject: '', password: 'guru123', isAdmin: false });
+            const [editingTeacher, setEditingTeacher] = useState(null);
+
+            // Efek untuk memuat daftar guru saat halaman admin dibuka
+            useEffect(() => {
+                if (authUser.isAdmin) {
+                    getTeacherProfiles().then(profiles => {
+                        setTeacherList(Object.values(profiles));
+                    });
+                }
+            }, [authUser]);
 
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
@@ -1886,10 +1869,94 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                             <Lock size={64} className="text-slate-500" />
                         </div>
                         <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Akses Terkunci</h2>
-                        <p className="text-slate-400 max-w-md">Tab Pengaturan dan Sinkronisasi Data Master Siswa hanya dapat diakses oleh Admin Sekolah.</p>
+                        <p className="text-slate-400 max-w-md">Tab Pengaturan dan Sinkronisasi Data Master hanya dapat diakses oleh Admin Sekolah.</p>
                     </div>
                 );
             }
+
+            // FUNGSI BARU: Menambah, Mengedit, Menghapus Guru ke Supabase
+            const handleAddTeacher = async (e) => {
+                e.preventDefault();
+                if (!newTeacher.id || !newTeacher.name || !newTeacher.subject) return;
+                
+                setIsSaving(true);
+                try {
+                    if (supabase) {
+                        const payload = {
+                            id: newTeacher.id.trim(),
+                            username: newTeacher.id.trim(),
+                            name: newTeacher.name.trim(),
+                            subject: newTeacher.subject.trim(),
+                            password: newTeacher.password,
+                            is_admin: newTeacher.isAdmin,
+                            theme_from: 'from-blue-600',
+                            theme_to: 'to-cyan-600'
+                        };
+                        const { error } = await supabase.from('teachers').upsert([payload]);
+                        if (error) throw error;
+                        
+                        showMessage("Akun Guru berhasil ditambahkan! Silakan berikan Username dan Password kepada guru yang bersangkutan.", "Sukses");
+                        setShowAddTeacher(false);
+                        setNewTeacher({ id: '', name: '', subject: '', password: 'guru123', isAdmin: false });
+                        
+                        // Segarkan daftar guru
+                        const profiles = await getTeacherProfiles();
+                        setTeacherList(Object.values(profiles));
+                    } else {
+                        showMessage("Aplikasi tidak terhubung dengan Supabase.", "Error");
+                    }
+                } catch (error) {
+                    showMessage("Gagal menambah guru: " + error.message, "Error");
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            const handleEditTeacher = (teacher) => {
+                setEditingTeacher({ ...teacher });
+            };
+
+            const handleUpdateTeacher = async (e) => {
+                e.preventDefault();
+                if (!editingTeacher.name.trim() || !editingTeacher.subject.trim()) return;
+                setIsSaving(true);
+                try {
+                    if (supabase) {
+                        const { error } = await supabase.from('teachers').update({
+                            name: editingTeacher.name.trim(),
+                            subject: editingTeacher.subject.trim(),
+                            password: editingTeacher.password,
+                            is_admin: editingTeacher.isAdmin
+                        }).eq('id', editingTeacher.id);
+                        
+                        if (error) throw error;
+                        
+                        showMessage("Data Guru berhasil diperbarui!", "Sukses");
+                        setEditingTeacher(null);
+                        
+                        const profiles = await getTeacherProfiles();
+                        setTeacherList(Object.values(profiles));
+                    }
+                } catch (error) {
+                    showMessage("Gagal memperbarui guru: " + error.message, "Error");
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            const handleDeleteTeacher = (id) => {
+                showConfirm("Yakin ingin menghapus akun guru ini? Data login dan profilnya akan hilang permanen dari sistem.", async () => {
+                    try {
+                        const { error } = await supabase.from('teachers').delete().eq('id', id);
+                        if (error) throw error;
+                        showMessage("Akun guru berhasil dihapus.", "Sukses");
+                        const profiles = await getTeacherProfiles();
+                        setTeacherList(Object.values(profiles));
+                    } catch (error) {
+                        showMessage("Gagal menghapus guru: " + error.message, "Error");
+                    }
+                });
+            };
 
             const handleResetLocalData = () => {
                 showConfirm("Hapus semua data lokal yang tersimpan di browser ini?", () => {
@@ -2042,7 +2109,6 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                 }
             };
 
-            // FUNGSI BARU: Edit & Hapus Master Siswa
             const handleEditStudent = (student) => {
                 setEditingStudentId(student.id);
                 setEditStudentName(student.name);
@@ -2076,11 +2142,12 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
+                        {/* PANEL MANAJEMEN DATABASE */}
                         <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
                             <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Sliders size={20} className="text-indigo-400"/> Manajemen Database</h3>
                             
                             <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl text-sm text-indigo-200">
-                                Pembersihan penyimpanan lokal digunakan apabila browser Anda menolak memuat data terbaru atau mengalami crash akibat memori usang.
+                                Pembersihan penyimpanan lokal digunakan apabila browser Anda menolak memuat data terbaru.
                             </div>
 
                             <button onClick={handleResetLocalData} className="w-full bg-slate-800 border border-white/10 text-slate-300 py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-slate-700 hover:text-white transition-all">
@@ -2092,6 +2159,7 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                             </button>
                         </div>
 
+                        {/* PANEL MASTER DATA SISWA */}
                         <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4">
                             <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-4"><Users size={20} className="text-emerald-400"/> Master Data Siswa</h3>
                             
@@ -2107,9 +2175,55 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                                 <Download size={18} /> DOWNLOAD FORMAT TEMPLATE
                             </button>
                         </div>
+                        
+                        {/* PANEL BARU: MANAJEMEN AKUN GURU */}
+                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md space-y-4 md:col-span-2">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Users size={20} className="text-orange-400"/> Manajemen Akun Guru</h3>
+                                <button onClick={() => setShowAddTeacher(true)} className="bg-orange-600/20 border border-orange-500/50 text-orange-400 px-5 py-2.5 rounded-xl text-sm font-bold flex gap-2 hover:bg-orange-600 hover:text-white transition-all shadow-lg">
+                                    <Plus size={16} /> TAMBAH GURU
+                                </button>
+                            </div>
+                            
+                            <div className="overflow-x-auto custom-scrollbar border border-white/5 rounded-xl bg-slate-950/50">
+                                <table className="w-full text-left border-collapse min-w-max">
+                                    <thead className="bg-slate-950">
+                                        <tr>
+                                            <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10">Username (ID)</th>
+                                            <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10">Nama Lengkap</th>
+                                            <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10">Mata Pelajaran</th>
+                                            <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center">Status</th>
+                                            <th className="p-4 text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-white/10 text-center w-28">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {teacherList.map((t, idx) => (
+                                            <tr key={t.id || idx} className="border-b border-white/5 hover:bg-slate-800/50">
+                                                <td className="p-4 text-slate-300 font-mono text-sm font-bold">{t.id}</td>
+                                                <td className="p-4 text-slate-200 text-sm">{t.name}</td>
+                                                <td className="p-4 text-orange-300/80 text-sm font-mono">{t.subject}</td>
+                                                <td className="p-4 text-center">
+                                                    {t.isAdmin ? 
+                                                        <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider">ADMIN</span> : 
+                                                        <span className="bg-slate-800 text-slate-400 px-3 py-1 rounded-full text-[10px] tracking-wider">GURU</span>
+                                                    }
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button onClick={() => handleEditTeacher(t)} className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"><Pencil size={16}/></button>
+                                                        <button onClick={() => handleDeleteTeacher(t.id)} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {teacherList.length === 0 && <p className="text-slate-500 text-center py-6 text-sm">Memuat data guru...</p>}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* TABEL BARU: DAFTAR MASTER SISWA */}
+                    {/* TABEL MASTER SISWA */}
                     <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md mt-6">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                             <h3 className="font-bold text-white text-lg flex items-center gap-2"><Users size={20} className="text-blue-400"/> Tabel Master Siswa</h3>
@@ -2187,7 +2301,7 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                             <div className="p-6 flex-1 overflow-auto">
                                 <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs text-emerald-300 mb-4 font-mono">
                                     Pastikan Anda menggunakan format dari tombol "Download Format Template".<br/><br/>
-                                    Sistem akan otomatis <b>melewati (skip)</b> nama siswa yang sudah pernah dimasukkan ke dalam kelas yang sama untuk mencegah data ganda.
+                                    Sistem akan otomatis <b>melewati (skip)</b> nama siswa yang sudah pernah dimasukkan ke dalam kelas yang sama.
                                 </div>
                                 
                                 <div className="w-full p-8 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center bg-slate-950/50 hover:bg-slate-900 transition-colors relative">
@@ -2227,9 +2341,92 @@ function AssessmentsView({ data, authUser, showConfirm, showMessage }) {
                         </div>
                         </div>
                     )}
+
+                    {/* MODAL TAMBAH GURU */}
+                    {showAddTeacher && (
+                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
+                            <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                                    <h3 className="font-bold text-white text-lg flex items-center gap-2"><Users className="text-orange-400"/> Tambah Akun Guru</h3>
+                                    <button onClick={() => setShowAddTeacher(false)} className="text-slate-400 hover:text-white"><X/></button>
+                                </div>
+                                <form onSubmit={handleAddTeacher} className="p-6 space-y-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Username / ID Login</label>
+                                        <input type="text" value={newTeacher.id} onChange={e => setNewTeacher({...newTeacher, id: e.target.value.toLowerCase().replace(/\s+/g, '_')})} placeholder="contoh: budi_matematika" className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-orange-500 font-mono text-sm" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Nama Lengkap & Gelar</label>
+                                        <input type="text" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} placeholder="contoh: Budi Santoso, S.Pd" className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-orange-500" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Mata Pelajaran</label>
+                                        <input type="text" value={newTeacher.subject} onChange={e => setNewTeacher({...newTeacher, subject: e.target.value})} placeholder="contoh: Matematika" className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-orange-500" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Password Default</label>
+                                        <input type="text" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-orange-500 font-mono text-sm" required />
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <input type="checkbox" id="isAdmin" checked={newTeacher.isAdmin} onChange={e => setNewTeacher({...newTeacher, isAdmin: e.target.checked})} className="w-4 h-4 rounded border-white/10 bg-slate-950 text-orange-500 focus:ring-orange-500 focus:ring-offset-slate-900 cursor-pointer" />
+                                        <label htmlFor="isAdmin" className="text-sm text-slate-300 cursor-pointer">Jadikan sebagai Admin Sekolah</label>
+                                    </div>
+                                    
+                                    <div className="pt-4 border-t border-white/10 flex justify-end gap-3 mt-6">
+                                        <button type="button" onClick={() => setShowAddTeacher(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors text-sm">Batal</button>
+                                        <button type="submit" disabled={isSaving} className="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-500/20 transition-all disabled:opacity-50 text-sm">
+                                            {isSaving ? 'Menyimpan...' : 'Simpan Akun'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL EDIT GURU */}
+                    {editingTeacher && (
+                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
+                            <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                                    <h3 className="font-bold text-white text-lg flex items-center gap-2"><Pencil className="text-blue-400"/> Edit Akun Guru</h3>
+                                    <button onClick={() => setEditingTeacher(null)} className="text-slate-400 hover:text-white"><X/></button>
+                                </div>
+                                <form onSubmit={handleUpdateTeacher} className="p-6 space-y-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Username / ID Login</label>
+                                        <input type="text" value={editingTeacher.id} disabled className="w-full bg-slate-950/50 border border-white/5 px-4 py-2.5 rounded-xl text-slate-500 font-mono text-sm cursor-not-allowed" title="Username tidak dapat diubah" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Nama Lengkap & Gelar</label>
+                                        <input type="text" value={editingTeacher.name} onChange={e => setEditingTeacher({...editingTeacher, name: e.target.value})} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-blue-500" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Mata Pelajaran</label>
+                                        <input type="text" value={editingTeacher.subject} onChange={e => setEditingTeacher({...editingTeacher, subject: e.target.value})} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-blue-500" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold mb-1 block">Password</label>
+                                        <input type="text" value={editingTeacher.password || ''} onChange={e => setEditingTeacher({...editingTeacher, password: e.target.value})} className="w-full bg-slate-950 border border-white/10 px-4 py-2.5 rounded-xl text-white outline-none focus:border-blue-500 font-mono text-sm" required />
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <input type="checkbox" id="editIsAdmin" checked={editingTeacher.isAdmin} onChange={e => setEditingTeacher({...editingTeacher, isAdmin: e.target.checked})} className="w-4 h-4 rounded border-white/10 bg-slate-950 text-blue-500 cursor-pointer" />
+                                        <label htmlFor="editIsAdmin" className="text-sm text-slate-300 cursor-pointer">Jadikan sebagai Admin Sekolah</label>
+                                    </div>
+                                    
+                                    <div className="pt-4 border-t border-white/10 flex justify-end gap-3 mt-6">
+                                        <button type="button" onClick={() => setEditingTeacher(null)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors text-sm">Batal</button>
+                                        <button type="submit" disabled={isSaving} className="px-5 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 text-sm">
+                                            {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
+
         try {
             const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(<ArtGradesApp />);
