@@ -26,6 +26,9 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
 
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -372,7 +375,9 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                         saveLocalData(LOCAL_DATA);
                         
                         const docs = Object.entries(LOCAL_DATA.grades).map(([id, score]) => {
-                            const [studentId, assessmentId] = id.split('_');
+                            const underscoreIndex = id.indexOf('_');
+                            const studentId = id.substring(0, underscoreIndex);
+                            const assessmentId = id.substring(underscoreIndex + 1);
                             return { data: () => ({ studentId, assessmentId, score }) };
                         });
                         console.log('📤 onSnapshot: Callback dengan', docs.length, 'grades');
@@ -388,8 +393,10 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
 
                 console.log('⚠️ onSnapshot: Fallback ke LOCAL_DATA untuk', tableName);
                 if (tableName === 'grades') {
-                    const docs = Object.entries(state.grades || {}).map(([id, score]) => {
-                        const [studentId, assessmentId] = id.split('_');
+                   const docs = Object.entries(state.grades || {}).map(([id, score]) => {
+                        const underscoreIndex = id.indexOf('_');
+                        const studentId = id.substring(0, underscoreIndex);
+                        const assessmentId = id.substring(underscoreIndex + 1);
                         return { data: () => ({ studentId, assessmentId, score }) };
                     });
                     console.log('📤 onSnapshot (fallback): Callback dengan', docs.length, 'grades');
@@ -832,7 +839,8 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
 
             const myGradesCount = useMemo(() => {
                 return Object.keys(data.grades).filter(key => {
-                    const assId = key.split('_')[1];
+                    const underscoreIndex = key.indexOf('_');
+                    const assId = key.substring(underscoreIndex + 1);
                     return myAssessments.some(a => a.id === assId);
                 }).length;
             }, [data.grades, myAssessments]);
@@ -1244,7 +1252,7 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                 });
             }, [data.assessments, authUser.id, activeClasses, selectedClassId]);
 
-            // LOGIKA BARU: Mengelompokkan materi berdasarkan Judul yang sama persis
+            // LOGIKA PENGELOMPOKAN MATERI
             const groupedAssessments = useMemo(() => {
                 const groups = {};
                 myFilteredAssessments.forEach(a => {
@@ -1370,6 +1378,206 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                 }
             };
 
+            // FUNGSI BARU: DOWNLOAD EXCEL
+            const handleDownloadExcel = () => {
+                if (typeof window.XLSX === 'undefined') {
+                    showMessage("Library Excel belum dimuat. Silakan muat ulang (refresh) halaman.", "Error");
+                    return;
+                }
+
+                const cClass = activeClasses.find(c => c.id === selectedClassId);
+                const className = cClass ? cClass.name : 'Unknown';
+                
+                // Susun Kop Surat
+                const wsData = [
+                    ["", "PEMERINTAH KABUPATEN KEBUMEN"],
+                    ["", "DINAS PENDIDIKAN KEPEMUDAAN DAN OLAH RAGA"],
+                    ["", "SMP NEGERI 2 AYAH"],
+                    ["", "Desa Jintung, Kec. Ayah, Kab. Kebumen, Prop. Jawa Tengah"],
+                    ["", "Website: https://www.smpn2ayah.sch.id/"],
+                    [],
+                    ["", "DATA HASIL PENILAIAN"],
+                    [],
+                    ["", "MATA PELAJARAN", ":", authUser.subject.toUpperCase()],
+                    ["", "KELAS", ":", className],
+                    ["", "SEMESTER", ":", "GANJIL / GENAP"], 
+                    ["", "TAHUN PELAJARAN", ":", "2026/2027"],
+                    []
+                ];
+
+                // Susun Header Tabel Dinamis
+                const headerRow1 = ["NO.", "NAMA SISWA"];
+                const headerRow2 = ["", ""];
+                
+                groupedAssessments.forEach(group => {
+                    group.items.forEach(a => {
+                        headerRow1.push(a.title.toUpperCase());
+                        headerRow2.push(`W: ${a.weight || 1}`);
+                    });
+                    if (group.items.length > 1) {
+                        headerRow1.push(`AVG ${group.originalTitle.toUpperCase()}`);
+                        headerRow2.push("");
+                    }
+                });
+                headerRow1.push("NILAI AKHIR");
+                headerRow2.push("");
+
+                wsData.push(headerRow1);
+                wsData.push(headerRow2);
+
+                // Tambahkan Nilai Siswa
+                classStudents.forEach((s, idx) => {
+                    const row = [idx + 1, s.name];
+                    
+                    groupedAssessments.forEach(group => {
+                        let sumGroup = 0;
+                        let countGroup = 0;
+                        group.items.forEach(a => {
+                            const globalScore = data.grades[`${s.id}_${a.id}`];
+                            const localScore = localGrades[`${s.id}_${a.id}`];
+                            const scoreToUse = localScore !== undefined && localScore !== '' ? Number(localScore) : globalScore;
+                            
+                            row.push(scoreToUse !== undefined ? scoreToUse : '');
+                            
+                            if (scoreToUse !== undefined) {
+                                sumGroup += Number(scoreToUse);
+                                countGroup++;
+                            }
+                        });
+                        
+                        if (group.items.length > 1) {
+                            row.push(countGroup > 0 ? Math.round(sumGroup / countGroup) : '');
+                        }
+                    });
+                    
+                    const naVal = calculateNA(s.id);
+                    row.push(naVal !== '-' ? naVal : '');
+                    
+                    wsData.push(row);
+                });
+
+                const ws = window.XLSX.utils.aoa_to_sheet(wsData);
+
+                // Gabungkan baris (Merge Cells) Kop Surat
+                ws['!merges'] = [
+                    { s: {r:0, c:1}, e: {r:0, c:5} },
+                    { s: {r:1, c:1}, e: {r:1, c:5} },
+                    { s: {r:2, c:1}, e: {r:2, c:5} },
+                    { s: {r:3, c:1}, e: {r:3, c:5} },
+                    { s: {r:4, c:1}, e: {r:4, c:5} },
+                    { s: {r:6, c:1}, e: {r:6, c:5} },
+                    { s: {r:13, c:0}, e: {r:14, c:0} }, // Merge kolom NO 
+                    { s: {r:13, c:1}, e: {r:14, c:1} }  // Merge kolom NAMA 
+                ];
+
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, `Nilai_Kls_${className}`);
+                window.XLSX.writeFile(wb, `Input_Nilai_${className}.xlsx`);
+            };
+
+            // FUNGSI BARU: DOWNLOAD PDF
+            const handleDownloadPDF = () => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('l', 'mm', 'a4'); // L = Landscape
+
+                    const cClass = activeClasses.find(c => c.id === selectedClassId);
+                    const className = cClass ? cClass.name : 'Unknown';
+
+                    // Kop Surat PDF
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("PEMERINTAH KABUPATEN KEBUMEN", doc.internal.pageSize.getWidth()/2, 15, { align: "center" });
+                    doc.text("DINAS PENDIDIKAN KEPEMUDAAN DAN OLAH RAGA", doc.internal.pageSize.getWidth()/2, 21, { align: "center" });
+                    doc.setFontSize(14);
+                    doc.text("SMP NEGERI 2 AYAH", doc.internal.pageSize.getWidth()/2, 28, { align: "center" });
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Desa Jintung, Kec. Ayah, Kab. Kebumen, Prop. Jawa Tengah", doc.internal.pageSize.getWidth()/2, 33, { align: "center" });
+                    doc.text("Website: https://www.smpn2ayah.sch.id/", doc.internal.pageSize.getWidth()/2, 38, { align: "center" });
+                    
+                    // Garis pembatas
+                    doc.setLineWidth(0.5);
+                    doc.line(14, 41, doc.internal.pageSize.getWidth() - 14, 41);
+
+                    doc.setFontSize(11);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("DATA HASIL PENILAIAN", doc.internal.pageSize.getWidth()/2, 49, { align: "center" });
+
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(`MATA PELAJARAN : ${authUser.subject.toUpperCase()}`, 14, 58);
+                    doc.text(`KELAS          : ${className}`, 14, 63);
+                    doc.text(`SEMESTER       : GANJIL / GENAP`, 220, 58);
+                    doc.text(`TAHUN PELAJARAN: 2026/2027`, 220, 63);
+
+                    // Susun Header
+                    const head1 = ["NO.", "NAMA SISWA"];
+                    const head2 = ["", ""];
+                    
+                    groupedAssessments.forEach(group => {
+                        group.items.forEach(a => {
+                            head1.push(a.title.toUpperCase());
+                            head2.push(`W: ${a.weight || 1}`);
+                        });
+                        if (group.items.length > 1) {
+                            head1.push(`AVG ${group.originalTitle.toUpperCase()}`);
+                            head2.push("");
+                        }
+                    });
+                    head1.push("NILAI AKHIR");
+                    head2.push("");
+
+                    const body = [];
+                    classStudents.forEach((s, idx) => {
+                        const row = [idx + 1, s.name];
+                        groupedAssessments.forEach(group => {
+                            let sumGroup = 0;
+                            let countGroup = 0;
+                            group.items.forEach(a => {
+                                const globalScore = data.grades[`${s.id}_${a.id}`];
+                                const localScore = localGrades[`${s.id}_${a.id}`];
+                                const scoreToUse = localScore !== undefined && localScore !== '' ? Number(localScore) : globalScore;
+                                row.push(scoreToUse !== undefined ? scoreToUse : '-');
+                                if (scoreToUse !== undefined) {
+                                    sumGroup += Number(scoreToUse);
+                                    countGroup++;
+                                }
+                            });
+                            if (group.items.length > 1) {
+                                row.push(countGroup > 0 ? Math.round(sumGroup / countGroup) : '-');
+                            }
+                        });
+                        const naVal = calculateNA(s.id);
+                        row.push(naVal !== '-' ? naVal : '-');
+                        body.push(row);
+                    });
+
+                    // Cetak PDF AutoTable
+                    doc.autoTable({
+                        startY: 68,
+                        head: [head1, head2],
+                        body: body,
+                        theme: 'grid',
+                        headStyles: { fillColor: [15, 23, 42], halign: 'center', valign: 'middle', fontSize: 7 },
+                        bodyStyles: { fontSize: 8 },
+                        columnStyles: {
+                            0: { halign: 'center', cellWidth: 10 },
+                            1: { cellWidth: 45 },
+                        },
+                        didParseCell: function(data) {
+                            if (data.section === 'body' && data.column.index > 1) {
+                                data.cell.styles.halign = 'center';
+                            }
+                        }
+                    });
+
+                    doc.save(`Input_Nilai_${className}.pdf`);
+                } catch (error) {
+                    showMessage("Gagal membuat PDF: " + error.message, "Error");
+                }
+            };
+
             return (
                 <div className="space-y-6 animate-in fade-in relative">
                     {isSavingBatch && (
@@ -1388,6 +1596,18 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                             <h2 className="text-3xl font-bold text-white tracking-tight">Input Nilai Matrix</h2>
                             <p className="text-slate-400 mt-1">Blok nilai di Excel, klik di sel pertama, lalu tekan <b>Ctrl+V</b>.</p>
                         </div>
+                        
+                        {/* TOMBOL DOWNLOAD BARU */}
+                        {selectedClassId && classStudents.length > 0 && (
+                            <div className="flex gap-3">
+                                <button onClick={handleDownloadExcel} className="bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-600 hover:text-white transition-all shadow-lg">
+                                    <FileSpreadsheet size={18} /> EXCEL
+                                </button>
+                                <button onClick={handleDownloadPDF} className="bg-red-600/20 border border-red-500/50 text-red-400 px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-red-600 hover:text-white transition-all shadow-lg">
+                                    <Printer size={18} /> PDF
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
@@ -1407,7 +1627,6 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                                         <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 w-8 md:w-12 text-center shrink-0">No</th>
                                         <th className="p-2 md:p-4 text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 sticky left-0 bg-slate-950 z-10 min-w-[110px] max-w-[120px] md:min-w-[200px] md:max-w-max border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Nama Siswa</th>
                                         
-                                        {/* Menggunakan groupedAssessments untuk header */}
                                         {groupedAssessments.map(group => (
                                             <React.Fragment key={group.originalTitle}>
                                                 {group.items.map(a => (
@@ -1420,7 +1639,6 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                                                     </th>
                                                 ))}
                                                 
-                                                {/* Kolom Rata-rata otomatis jika materi lebih dari 1 */}
                                                 {group.items.length > 1 && (
                                                     <th className="p-2 md:p-4 text-blue-400 font-bold text-[10px] md:text-xs uppercase tracking-wider border-b border-white/10 text-center bg-blue-500/5 min-w-[70px] md:min-w-[90px] border-l border-blue-500/20 shadow-[inset_2px_0_5px_-2px_rgba(0,0,0,0.2)]">
                                                         AVG<br/>{group.originalTitle}
@@ -1459,7 +1677,6 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                                                                 countGroup++;
                                                             }
                                                             
-                                                            // Mencari index asli untuk navigasi tombol panah (keyboard)
                                                             const colIdx = myFilteredAssessments.findIndex(ma => ma.id === a.id);
                                                             
                                                             return (
@@ -1484,7 +1701,6 @@ Coba AI secara langsung di aplikasi favorit Anda … Gunakan Gemini untuk membua
                                                             )
                                                         })}
                                                         
-                                                        {/* TAMPILKAN NILAI RATA-RATA JIKA ADA LEBIH DARI 1 TUGAS */}
                                                         {group.items.length > 1 && (
                                                             <td className="p-2 md:p-4 text-center font-black font-mono bg-blue-500/5 text-blue-400 text-sm md:text-base border-l border-blue-500/20 shadow-[inset_2px_0_5px_-2px_rgba(0,0,0,0.2)]">
                                                                 {countGroup > 0 ? Math.round(sumGroup / countGroup) : '-'}
